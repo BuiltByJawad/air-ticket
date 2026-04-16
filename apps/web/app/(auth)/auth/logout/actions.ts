@@ -4,6 +4,6 @@ import { redirect } from 'next/navigation';
 import { clearSessionToken } from '../../../../lib/auth/session';
 
 export async function logoutAction(): Promise<void> {
-  clearSessionToken();
+  await clearSessionToken();
   redirect('/auth/login');
 }

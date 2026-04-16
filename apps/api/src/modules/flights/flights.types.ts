@@ -12,6 +12,8 @@ export interface FlightSegment {
   arrivalTime: string;
   marketingCarrier: string;
   flightNumber: string;
+  duration?: string;
+  aircraft?: string;
 }
 
 export interface MoneyAmount {
@@ -23,6 +25,8 @@ export interface FlightOffer {
   id: string;
   segments: FlightSegment[];
   totalPrice: MoneyAmount;
+  source?: 'duffel' | 'stub';
+  validUntil?: string;
 }
 
 export interface FlightSearchResponse {
@@ -35,4 +39,9 @@ export interface FlightQuoteRequest {
 
 export interface FlightQuoteResponse {
   offer: FlightOffer;
+}
+
+export interface IFlightProvider {
+  search(input: FlightSearchRequest): Promise<FlightOffer[]>;
+  quote(offerId: string): Promise<FlightOffer>;
 }

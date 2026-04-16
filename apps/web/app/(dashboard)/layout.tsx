@@ -4,7 +4,7 @@ import { clearSessionToken, getSessionToken } from '@/lib/auth/session';
 import { SidebarNav } from '@/components/shared/sidebar-nav';
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const token = getSessionToken();
+  const token = await getSessionToken();
   if (!token) {
     redirect('/auth/login');
   }
@@ -13,7 +13,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
   try {
     me = await fetchMe(token);
   } catch {
-    clearSessionToken();
+    await clearSessionToken();
     redirect('/auth/login');
   }
 

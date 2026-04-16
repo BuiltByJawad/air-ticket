@@ -5,7 +5,7 @@ import { listBookings } from '@/lib/api/api-client';
 import { getSessionToken } from '@/lib/auth/session';
 
 export default async function DashboardHomePage() {
-  const token = getSessionToken();
+  const token = await getSessionToken();
   let bookings: Awaited<ReturnType<typeof listBookings>> = [];
 
   if (token) {

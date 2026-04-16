@@ -6,7 +6,7 @@ import { clearSessionToken, getSessionToken } from '@/lib/auth/session';
 import { redirect } from 'next/navigation';
 
 export default async function BookingsPage() {
-  const token = getSessionToken();
+  const token = await getSessionToken();
   if (!token) {
     redirect('/auth/login');
   }
@@ -15,7 +15,7 @@ export default async function BookingsPage() {
   try {
     bookings = await listBookings(token);
   } catch {
-    clearSessionToken();
+    await clearSessionToken();
     redirect('/auth/login');
   }
 

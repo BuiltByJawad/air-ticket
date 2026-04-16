@@ -1,11 +1,12 @@
 import { cookies } from 'next/headers';
 import { loadWebEnv } from '../config/env';
 
-export function setSessionToken(token: string): void {
+export async function setSessionToken(token: string): Promise<void> {
   const env = loadWebEnv();
   const isProd = env.NODE_ENV === 'production';
 
-  cookies().set(env.SESSION_COOKIE_NAME, token, {
+  const jar = await cookies();
+  jar.set(env.SESSION_COOKIE_NAME, token, {
     httpOnly: true,
     sameSite: 'lax',
     secure: isProd,
@@ -14,13 +15,15 @@ export function setSessionToken(token: string): void {
   });
 }
 
-export function clearSessionToken(): void {
+export async function clearSessionToken(): Promise<void> {
   const env = loadWebEnv();
-  cookies().delete(env.SESSION_COOKIE_NAME);
+  const jar = await cookies();
+  jar.delete(env.SESSION_COOKIE_NAME);
 }
 
-export function getSessionToken(): string | null {
+export async function getSessionToken(): Promise<string | null> {
   const env = loadWebEnv();
-  const token = cookies().get(env.SESSION_COOKIE_NAME)?.value;
+  const jar = await cookies();
+  const token = jar.get(env.SESSION_COOKIE_NAME)?.value;
   return token ?? null;
 }
