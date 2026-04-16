@@ -9,6 +9,9 @@
     ],
     "incremental": true,
     "baseUrl": ".",
+    "paths": {
+      "@/*": ["./*"]
+    },
     "allowJs": true,
     "noEmit": true,
     "isolatedModules": true
