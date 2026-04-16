@@ -2,7 +2,7 @@ import { BookOpen, Calendar, DollarSign } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { listBookings } from '@/lib/api/api-client';
-import { clearSessionToken, getSessionToken } from '@/lib/auth/session';
+import { getSessionToken } from '@/lib/auth/session';
 import { redirect } from 'next/navigation';
 
 export default async function BookingsPage() {
@@ -15,7 +15,6 @@ export default async function BookingsPage() {
   try {
     bookings = await listBookings(token);
   } catch {
-    await clearSessionToken();
     redirect('/auth/login');
   }
 

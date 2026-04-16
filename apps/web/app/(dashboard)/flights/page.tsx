@@ -43,7 +43,6 @@ export default async function FlightsPage({
       offers = res.offers;
       nextCursor = res.nextCursor;
     } catch {
-      await clearSessionToken();
       redirect('/auth/login');
     }
   }
