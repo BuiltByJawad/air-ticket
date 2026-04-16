@@ -30,17 +30,18 @@ function OfferSourceBadge({ source }: { source?: 'duffel' | 'stub' }) {
 export default async function FlightsPage({
   searchParams
 }: {
-  searchParams?: { origin?: string; destination?: string; departureDate?: string; adults?: string };
+  searchParams?: Promise<{ origin?: string; destination?: string; departureDate?: string; adults?: string }>;
 }) {
   const token = await getSessionToken();
   if (!token) {
     redirect('/auth/login');
   }
 
-  const origin = (searchParams?.origin ?? '').trim();
-  const destination = (searchParams?.destination ?? '').trim();
-  const departureDate = (searchParams?.departureDate ?? '').trim();
-  const adultsRaw = (searchParams?.adults ?? '').trim();
+  const params = (await searchParams) ?? {};
+  const origin = (params.origin ?? '').trim();
+  const destination = (params.destination ?? '').trim();
+  const departureDate = (params.departureDate ?? '').trim();
+  const adultsRaw = (params.adults ?? '').trim();
   const adults = Number(adultsRaw || '1');
 
   let offers: FlightOffer[] = [];
