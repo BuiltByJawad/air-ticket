@@ -19,11 +19,11 @@ export class DuffelProvider implements IFlightProvider {
     this.logger.log('Duffel provider initialized');
   }
 
-  async search(input: { origin: string; destination: string; departureDate: string; adults: number }): Promise<FlightOffer[]> {
+  async search(input: { origin: string; destination: string; departureDate: string; adults: number; limit?: number; after?: string }): Promise<{ offers: FlightOffer[]; nextCursor?: string }> {
     this.ensureToken();
 
     try {
-      const body = {
+      const body: Record<string, unknown> = {
         data: {
           cabin_class: 'economy',
           slices: [
@@ -37,13 +37,25 @@ export class DuffelProvider implements IFlightProvider {
         }
       };
 
-      const res = await this.request<DuffelOfferRequestResponse>('POST', '/air/offer_requests', body);
-
-      if (!res.data?.offers || res.data.offers.length === 0) {
-        return [];
+      if (input.limit) {
+        body.data = { ...((body.data as Record<string, unknown>) ?? {}), max_offers: input.limit };
       }
 
-      return res.data.offers.map((offer) => this.normalizeOffer(offer));
+      let path = '/air/offer_requests';
+      if (input.after) {
+        path = `/air/offers?after=${encodeURIComponent(input.after)}&limit=${input.limit ?? 10}`;
+      }
+
+      const res = await this.request<DuffelOfferRequestResponse>('POST', path, input.after ? undefined : body);
+
+      if (!res.data?.offers || res.data.offers.length === 0) {
+        return { offers: [] };
+      }
+
+      const offers = res.data.offers.map((offer) => this.normalizeOffer(offer));
+      const nextCursor = res.data.after ?? undefined;
+
+      return { offers, nextCursor };
     } catch (error) {
       this.logger.error(`Duffel search failed: ${this.extractError(error)}`);
       throw error;
@@ -136,6 +148,7 @@ export class DuffelProvider implements IFlightProvider {
 interface DuffelOfferRequestResponse {
   data: {
     offers: DuffelOffer[];
+    after?: string;
   };
 }
 

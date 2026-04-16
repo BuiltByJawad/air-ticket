@@ -3,6 +3,8 @@ export interface FlightSearchRequest {
   destination: string;
   departureDate: string;
   adults: number;
+  limit?: number;
+  after?: string;
 }
 
 export interface FlightSegment {
@@ -31,6 +33,7 @@ export interface FlightOffer {
 
 export interface FlightSearchResponse {
   offers: FlightOffer[];
+  nextCursor?: string;
 }
 
 export interface FlightQuoteRequest {
@@ -42,6 +45,6 @@ export interface FlightQuoteResponse {
 }
 
 export interface IFlightProvider {
-  search(input: FlightSearchRequest): Promise<FlightOffer[]>;
+  search(input: FlightSearchRequest): Promise<{ offers: FlightOffer[]; nextCursor?: string }>;
   quote(offerId: string): Promise<FlightOffer>;
 }

@@ -8,7 +8,9 @@ const SearchBodySchema = z.object({
   origin: z.string().min(3).max(3),
   destination: z.string().min(3).max(3),
   departureDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-  adults: z.number().int().min(1).max(9)
+  adults: z.number().int().min(1).max(9),
+  limit: z.number().int().min(1).max(100).optional(),
+  after: z.string().min(1).optional()
 });
 
 const QuoteBodySchema = z.object({

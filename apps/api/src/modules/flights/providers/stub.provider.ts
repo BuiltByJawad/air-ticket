@@ -17,11 +17,11 @@ function addHoursIso(dateIso: string, hours: number): string {
 
 @Injectable()
 export class StubProvider implements IFlightProvider {
-  async search(input: { origin: string; destination: string; departureDate: string; adults: number }): Promise<FlightOffer[]> {
+  async search(input: { origin: string; destination: string; departureDate: string; adults: number; limit?: number; after?: string }): Promise<{ offers: FlightOffer[]; nextCursor?: string }> {
     const origin = normalizeIata(input.origin);
     const destination = normalizeIata(input.destination);
 
-    return [0, 1, 2].map((i) => {
+    const offers = [0, 1, 2].map((i) => {
       const dep = addHoursIso(input.departureDate, 8 + i * 2);
       const arr = addHoursIso(input.departureDate, 12 + i * 2);
 
@@ -48,6 +48,8 @@ export class StubProvider implements IFlightProvider {
         source: 'stub' as const
       };
     });
+
+    return { offers };
   }
 
   async quote(offerId: string): Promise<FlightOffer> {
@@ -57,8 +59,8 @@ export class StubProvider implements IFlightProvider {
     const departureDate = parts[3] ?? '1970-01-01';
     const index = Number(parts[4] ?? '0');
 
-    const offers = await this.search({ origin, destination, departureDate, adults: 1 });
-    const offer = offers.find((o) => o.id === offerId) ?? {
+    const result = await this.search({ origin, destination, departureDate, adults: 1 });
+    const offer = result.offers.find((o) => o.id === offerId) ?? {
       id: offerId,
       segments: [],
       totalPrice: { currency: 'USD', amount: '0.00' },

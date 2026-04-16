@@ -39,6 +39,7 @@ export interface FlightOffer {
 
 export interface FlightSearchResponse {
   offers: FlightOffer[];
+  nextCursor?: string;
 }
 
 export interface FlightQuoteResponse {
@@ -119,7 +120,7 @@ export async function fetchMe(accessToken: string): Promise<MeResponse> {
 
 export async function searchFlights(
   accessToken: string,
-  input: { origin: string; destination: string; departureDate: string; adults: number }
+  input: { origin: string; destination: string; departureDate: string; adults: number; limit?: number; after?: string }
 ): Promise<FlightSearchResponse> {
   const res = await apiFetch('/flights/search', {
     method: 'POST',

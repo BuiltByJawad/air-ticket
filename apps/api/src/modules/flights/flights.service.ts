@@ -24,16 +24,16 @@ export class FlightsService {
 
   async search(user: CurrentUserData, input: FlightSearchRequest): Promise<FlightSearchResponse> {
     try {
-      const offers = await this.provider.search(input);
-      if (offers.length > 0) {
-        return { offers };
+      const result = await this.provider.search(input);
+      if (result.offers.length > 0) {
+        return { offers: result.offers, nextCursor: result.nextCursor };
       }
     } catch (error) {
       this.logger.warn(`Primary provider failed, falling back to stub: ${String(error)}`);
     }
 
-    const offers = await this.stubProvider.search(input);
-    return { offers };
+    const result = await this.stubProvider.search(input);
+    return { offers: result.offers };
   }
 
   async quote(user: CurrentUserData, input: FlightQuoteRequest): Promise<FlightQuoteResponse> {
