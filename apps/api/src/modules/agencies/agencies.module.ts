@@ -1,0 +1,12 @@
+import { Module } from '@nestjs/common';
+import { AgenciesService } from './agencies.service';
+import { AdminAgenciesController } from './controllers/admin-agencies.controller';
+import { AdminUsersController } from './controllers/admin-users.controller';
+import { UsersModule } from '../users/users.module';
+
+@Module({
+  imports: [UsersModule],
+  providers: [AgenciesService],
+  controllers: [AdminAgenciesController, AdminUsersController]
+})
+export class AgenciesModule {}

@@ -1,0 +1,82 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  agent
+  admin
+}
+
+enum BookingStatus {
+  draft
+  confirmed
+  cancelled
+}
+
+model Agency {
+  id        String   @id @default(uuid())
+  name      String
+  createdAt DateTime @default(now())
+
+  users User[]
+  bookings Booking[]
+
+  @@unique([name])
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String
+  role         UserRole
+  createdAt    DateTime @default(now())
+
+  agencyId String?
+  agency   Agency? @relation(fields: [agencyId], references: [id])
+
+  createdBookings Booking[] @relation("BookingCreatedBy")
+}
+
+model Booking {
+  id        String        @id @default(uuid())
+  status    BookingStatus
+  offerId   String
+  offerData Json
+  currency  String
+  amount    String
+
+  agencyId String
+  agency   Agency @relation(fields: [agencyId], references: [id])
+
+  createdByUserId String
+  createdByUser   User   @relation("BookingCreatedBy", fields: [createdByUserId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([agencyId])
+  @@index([createdByUserId])
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  action    String
+  resource  String
+  resourceId String?
+  agencyId  String?
+  userId    String?
+  requestId String?
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  @@index([action])
+  @@index([resource])
+  @@index([agencyId])
+  @@index([userId])
+  @@index([createdAt])
+}
