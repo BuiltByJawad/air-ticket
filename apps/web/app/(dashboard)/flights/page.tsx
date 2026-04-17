@@ -1,11 +1,10 @@
-﻿import { Search, PlaneTakeoff, PlaneLanding, Users } from 'lucide-react';
+﻿import { Search } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { createBooking, quoteFlight, searchFlights } from '@/lib/api/api-client';
 import { clearSessionToken, getSessionToken } from '@/lib/auth/session';
 import { redirect } from 'next/navigation';
 import { LoadMoreOffers } from './components/load-more-offers';
+import { FlightSearchForm } from './components/flight-search-form';
 
 export default async function FlightsPage({
   searchParams
@@ -14,7 +13,7 @@ export default async function FlightsPage({
 }) {
   const token = await getSessionToken();
   if (!token) {
-    redirect('/auth/login');
+    redirect('/login');
   }
 
   const params = (await searchParams) ?? {};
@@ -43,7 +42,7 @@ export default async function FlightsPage({
       offers = res.offers;
       nextCursor = res.nextCursor;
     } catch {
-      redirect('/auth/login');
+      redirect('/login');
     }
   }
 
@@ -57,7 +56,7 @@ export default async function FlightsPage({
 
     const t = await getSessionToken();
     if (!t) {
-      redirect('/auth/login');
+      redirect('/login');
     }
 
     try {
@@ -70,7 +69,7 @@ export default async function FlightsPage({
       });
     } catch {
       await clearSessionToken();
-      redirect('/auth/login');
+      redirect('/login');
     }
 
     redirect('/bookings');
@@ -87,47 +86,11 @@ export default async function FlightsPage({
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Search className="h-5 w-5" />
-            Search
+            Search Flights
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <form method="get" action="/flights" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-            <div className="space-y-2">
-              <label htmlFor="origin" className="text-sm font-medium flex items-center gap-1">
-                <PlaneTakeoff className="h-3 w-3" /> Origin
-              </label>
-              <Input id="origin" name="origin" placeholder="DAC" defaultValue={origin} required />
-            </div>
-            <div className="space-y-2">
-              <label htmlFor="destination" className="text-sm font-medium flex items-center gap-1">
-                <PlaneLanding className="h-3 w-3" /> Destination
-              </label>
-              <Input id="destination" name="destination" placeholder="DXB" defaultValue={destination} required />
-            </div>
-            <div className="space-y-2">
-              <label htmlFor="departureDate" className="text-sm font-medium">Departure</label>
-              <Input id="departureDate" name="departureDate" type="date" defaultValue={departureDate} required />
-            </div>
-            <div className="space-y-2">
-              <label htmlFor="adults" className="text-sm font-medium flex items-center gap-1">
-                <Users className="h-3 w-3" /> Passengers
-              </label>
-              <Input
-                id="adults"
-                name="adults"
-                type="number"
-                min={1}
-                max={9}
-                defaultValue={String(Number.isFinite(adults) ? adults : 1)}
-                required
-              />
-            </div>
-            <div className="flex items-end">
-              <Button type="submit" className="w-full">
-                <Search className="h-4 w-4 mr-2" /> Search
-              </Button>
-            </div>
-          </form>
+          <FlightSearchForm />
         </CardContent>
       </Card>
 

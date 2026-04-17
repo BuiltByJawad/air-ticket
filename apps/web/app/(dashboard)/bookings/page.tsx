@@ -1,28 +1,37 @@
-import { BookOpen, Calendar, DollarSign } from 'lucide-react';
+import { BookOpen, Calendar, DollarSign, PlaneTakeoff, Receipt } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { listBookings } from '@/lib/api/api-client';
 import { getSessionToken } from '@/lib/auth/session';
 import { redirect } from 'next/navigation';
+import Link from 'next/link';
 
 export default async function BookingsPage() {
   const token = await getSessionToken();
   if (!token) {
-    redirect('/auth/login');
+    redirect('/login');
   }
 
   let bookings: Awaited<ReturnType<typeof listBookings>> = [];
   try {
     bookings = await listBookings(token);
   } catch {
-    redirect('/auth/login');
+    redirect('/login');
   }
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Bookings</h1>
-        <p className="text-muted-foreground">Manage your customer bookings.</p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Bookings</h1>
+          <p className="text-muted-foreground">Manage your customer bookings.</p>
+        </div>
+        <Link
+          href="/flights"
+          className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
+        >
+          <PlaneTakeoff className="h-4 w-4" /> New Search
+        </Link>
       </div>
 
       {bookings.length === 0 ? (
@@ -36,12 +45,13 @@ export default async function BookingsPage() {
       ) : (
         <div className="grid gap-4">
           {bookings.map((b) => (
-            <Card key={b.id}>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div className="space-y-1">
+            <Card key={b.id} className="hover:shadow-md transition-shadow">
+              <CardContent className="p-4 sm:p-6">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="space-y-1.5">
                     <div className="flex items-center gap-2">
-                      <p className="font-semibold">{b.offerId}</p>
+                      <Receipt className="h-4 w-4 text-muted-foreground" />
+                      <p className="font-semibold text-sm sm:text-base">{b.offerId}</p>
                       <StatusBadge status={b.status} />
                     </div>
                     <div className="flex items-center gap-4 text-sm text-muted-foreground">
@@ -53,11 +63,11 @@ export default async function BookingsPage() {
                           day: 'numeric'
                         })}
                       </span>
-                      <span className="flex items-center gap-1">
-                        <DollarSign className="h-3 w-3" />
-                        {b.totalPrice.currency} {b.totalPrice.amount}
-                      </span>
                     </div>
+                  </div>
+                  <div className="flex items-center gap-1 text-sm sm:text-base font-semibold">
+                    <DollarSign className="h-4 w-4 text-muted-foreground" />
+                    {b.totalPrice.currency} {b.totalPrice.amount}
                   </div>
                 </div>
               </CardContent>

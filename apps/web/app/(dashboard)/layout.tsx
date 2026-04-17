@@ -6,14 +6,14 @@ import { SidebarNav } from '@/components/shared/sidebar-nav';
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const token = await getSessionToken();
   if (!token) {
-    redirect('/auth/login');
+    redirect('/login');
   }
 
   let me: Awaited<ReturnType<typeof fetchMe>>;
   try {
     me = await fetchMe(token);
   } catch {
-    redirect('/auth/login');
+    redirect('/login');
   }
 
   return (

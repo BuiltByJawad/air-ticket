@@ -21,7 +21,7 @@ export default async function PublicHomePage() {
               Built for travel agencies who need speed, reliability, and compliance.
             </p>
             <div className="mt-8 flex gap-4">
-              <Link href="/auth/login">
+              <Link href="/login">
                 <Button size="lg" className="bg-white text-blue-700 hover:bg-blue-50">
                   Get Started <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
@@ -64,7 +64,7 @@ export default async function PublicHomePage() {
           <h2 className="text-2xl font-bold">Ready to get started?</h2>
           <p className="mt-2 text-muted-foreground">Sign in to your agency account to start booking.</p>
           <div className="mt-6">
-            <Link href="/auth/login">
+            <Link href="/login">
               <Button size="lg">
                 Sign In <ArrowRight className="ml-2 h-4 w-4" />
               </Button>

@@ -1,8 +1,9 @@
-import { BookOpen, Plane, TrendingUp, DollarSign } from 'lucide-react';
+import { BookOpen, Plane, TrendingUp, DollarSign, PlaneTakeoff, Calendar } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { listBookings } from '@/lib/api/api-client';
 import { getSessionToken } from '@/lib/auth/session';
+import Link from 'next/link';
 
 export default async function DashboardHomePage() {
   const token = await getSessionToken();
@@ -18,6 +19,7 @@ export default async function DashboardHomePage() {
 
   const totalBookings = bookings.length;
   const draftBookings = bookings.filter((b) => b.status === 'draft').length;
+  const confirmedBookings = bookings.filter((b) => b.status === 'confirmed').length;
   const totalRevenue = bookings.reduce((sum, b) => sum + parseFloat(b.totalPrice.amount), 0);
   const currency = bookings[0]?.totalPrice.currency ?? 'USD';
 
@@ -25,49 +27,57 @@ export default async function DashboardHomePage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-        <p className="text-muted-foreground">Overview of your agency activity.</p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Dashboard</h1>
+          <p className="text-muted-foreground">Overview of your agency activity.</p>
+        </div>
+        <Link
+          href="/flights"
+          className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
+        >
+          <PlaneTakeoff className="h-4 w-4" /> New Search
+        </Link>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Bookings</CardTitle>
+            <CardTitle className="text-xs font-medium text-muted-foreground sm:text-sm">Total Bookings</CardTitle>
             <BookOpen className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{totalBookings}</div>
+            <div className="text-xl font-bold sm:text-2xl">{totalBookings}</div>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Draft Bookings</CardTitle>
+            <CardTitle className="text-xs font-medium text-muted-foreground sm:text-sm">Confirmed</CardTitle>
             <Plane className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{draftBookings}</div>
+            <div className="text-xl font-bold sm:text-2xl">{confirmedBookings}</div>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
+            <CardTitle className="text-xs font-medium text-muted-foreground sm:text-sm">Total Revenue</CardTitle>
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{currency} {totalRevenue.toFixed(2)}</div>
+            <div className="text-xl font-bold sm:text-2xl">{currency} {totalRevenue.toFixed(2)}</div>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Avg. Booking Value</CardTitle>
+            <CardTitle className="text-xs font-medium text-muted-foreground sm:text-sm">Avg. Value</CardTitle>
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
+            <div className="text-xl font-bold sm:text-2xl">
               {currency} {totalBookings > 0 ? (totalRevenue / totalBookings).toFixed(2) : '0.00'}
             </div>
           </CardContent>
@@ -76,23 +86,30 @@ export default async function DashboardHomePage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Recent Bookings</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <Calendar className="h-5 w-5" />
+            Recent Bookings
+          </CardTitle>
         </CardHeader>
         <CardContent>
           {recentBookings.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No bookings yet. Search flights to create your first booking.</p>
+            <div className="flex flex-col items-center justify-center py-8 text-center">
+              <BookOpen className="h-10 w-10 text-muted-foreground mb-3" />
+              <p className="text-sm font-medium">No bookings yet</p>
+              <p className="text-xs text-muted-foreground mt-1">Search flights to create your first booking.</p>
+            </div>
           ) : (
             <div className="space-y-3">
               {recentBookings.map((b) => (
-                <div key={b.id} className="flex items-center justify-between rounded-md border p-3">
+                <div key={b.id} className="flex flex-col sm:flex-row sm:items-center justify-between rounded-lg border p-3 sm:p-4 gap-2">
                   <div className="space-y-1">
-                    <p className="text-sm font-medium">{b.offerId}</p>
+                    <p className="text-sm font-semibold">{b.offerId}</p>
                     <p className="text-xs text-muted-foreground">
-                      {new Date(b.createdAt).toLocaleDateString()}
+                      {new Date(b.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                     </p>
                   </div>
                   <div className="flex items-center gap-3">
-                    <span className="text-sm font-medium">
+                    <span className="text-sm font-semibold">
                       {b.totalPrice.currency} {b.totalPrice.amount}
                     </span>
                     <StatusBadge status={b.status} />
