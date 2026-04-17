@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { FormField } from '@/components/shared/form-field';
 import { loginAction } from './actions';
 import { CleanErrorParam } from './components/clean-error-param';
+import Link from 'next/link';
 
 export default async function LoginPage({
   searchParams
@@ -75,6 +76,12 @@ export default async function LoginPage({
               </FormField>
               <Button type="submit" className="w-full h-11 text-base font-semibold">Sign in</Button>
             </form>
+            <p className="mt-4 text-center text-sm text-muted-foreground">
+              Don&apos;t have an account?{' '}
+              <Link href="/register" className="font-medium text-primary hover:underline">
+                Create one
+              </Link>
+            </p>
           </CardContent>
         </Card>
       </div>

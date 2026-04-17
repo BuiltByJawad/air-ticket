@@ -9,7 +9,7 @@ import { FlightSearchForm } from './components/flight-search-form';
 export default async function FlightsPage({
   searchParams
 }: {
-  searchParams?: Promise<{ origin?: string; destination?: string; departureDate?: string; adults?: string }>;
+  searchParams?: Promise<{ origin?: string; destination?: string; departureDate?: string; returnDate?: string; adults?: string }>;
 }) {
   const token = await getSessionToken();
   if (!token) {
@@ -20,6 +20,7 @@ export default async function FlightsPage({
   const origin = (params.origin ?? '').trim();
   const destination = (params.destination ?? '').trim();
   const departureDate = (params.departureDate ?? '').trim();
+  const returnDate = (params.returnDate ?? '').trim();
   const adultsRaw = (params.adults ?? '').trim();
   const adults = Number(adultsRaw || '1');
 

@@ -175,6 +175,22 @@ export async function createBooking(
   return data;
 }
 
+export async function getBooking(accessToken: string, id: string): Promise<Booking> {
+  const res = await apiFetch(`/bookings/${encodeURIComponent(id)}`, {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${accessToken}`
+    }
+  });
+
+  if (!res.ok) {
+    throw new ApiError('Failed to get booking', res.status);
+  }
+
+  const data: Booking = (await res.json()) as Booking;
+  return data;
+}
+
 export async function listBookings(accessToken: string): Promise<Booking[]> {
   const res = await apiFetch('/bookings', {
     method: 'GET',
@@ -188,6 +204,33 @@ export async function listBookings(accessToken: string): Promise<Booking[]> {
   }
 
   const data: Booking[] = (await res.json()) as Booking[];
+  return data;
+}
+
+export interface RegisterResponse {
+  accessToken: string;
+  user: {
+    id: string;
+    email: string;
+    role: string;
+    agencyId: string | null;
+  };
+}
+
+export async function registerWithPassword(input: {
+  email: string;
+  password: string;
+}): Promise<RegisterResponse> {
+  const res = await apiFetch('/auth/register', {
+    method: 'POST',
+    body: JSON.stringify(input)
+  });
+
+  if (!res.ok) {
+    throw new ApiError('Registration failed', res.status);
+  }
+
+  const data: RegisterResponse = (await res.json()) as RegisterResponse;
   return data;
 }
 

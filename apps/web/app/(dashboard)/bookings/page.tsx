@@ -45,33 +45,35 @@ export default async function BookingsPage() {
       ) : (
         <div className="grid gap-4">
           {bookings.map((b) => (
-            <Card key={b.id} className="hover:shadow-md transition-shadow">
-              <CardContent className="p-4 sm:p-6">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  <div className="space-y-1.5">
-                    <div className="flex items-center gap-2">
-                      <Receipt className="h-4 w-4 text-muted-foreground" />
-                      <p className="font-semibold text-sm sm:text-base truncate">{b.offerId}</p>
-                      <StatusBadge status={b.status} />
+            <Link key={b.id} href={`/bookings/${b.id}`}>
+              <Card className="hover:shadow-md transition-shadow">
+                <CardContent className="p-4 sm:p-6">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="space-y-1.5">
+                      <div className="flex items-center gap-2">
+                        <Receipt className="h-4 w-4 text-muted-foreground" />
+                        <p className="font-semibold text-sm sm:text-base truncate">{b.offerId}</p>
+                        <StatusBadge status={b.status} />
+                      </div>
+                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                        <span className="flex items-center gap-1">
+                          <Calendar className="h-3 w-3" />
+                          {new Date(b.createdAt).toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric'
+                          })}
+                        </span>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                      <span className="flex items-center gap-1">
-                        <Calendar className="h-3 w-3" />
-                        {new Date(b.createdAt).toLocaleDateString('en-US', {
-                          year: 'numeric',
-                          month: 'short',
-                          day: 'numeric'
-                        })}
-                      </span>
+                    <div className="flex items-center gap-1 text-sm sm:text-base font-semibold">
+                      <DollarSign className="h-4 w-4 text-muted-foreground" />
+                      {b.totalPrice.currency} {b.totalPrice.amount}
                     </div>
                   </div>
-                  <div className="flex items-center gap-1 text-sm sm:text-base font-semibold">
-                    <DollarSign className="h-4 w-4 text-muted-foreground" />
-                    {b.totalPrice.currency} {b.totalPrice.amount}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            </Link>
           ))}
         </div>
       )}
