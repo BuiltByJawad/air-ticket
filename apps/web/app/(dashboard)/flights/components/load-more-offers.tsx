@@ -36,16 +36,16 @@ function OfferCard({ offer, bookAction }: { offer: FlightOffer; bookAction: (for
 
   return (
     <Card>
-      <CardContent className="p-6">
+      <CardContent className="p-4 sm:p-6">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="space-y-2">
             <div className="flex items-center gap-2">
-              <p className="text-lg font-semibold">
-                {first?.from ?? '--'}  {last?.to ?? '--'}
+              <p className="text-base sm:text-lg font-semibold">
+                {first?.from ?? '--'} → {last?.to ?? '--'}
               </p>
               <OfferSourceBadge source={offer.source} />
             </div>
-            <div className="flex flex-wrap gap-3 text-sm text-muted-foreground">
+            <div className="flex flex-wrap gap-x-3 gap-y-1 text-sm text-muted-foreground">
               <span className="flex items-center gap-1">
                 <Clock className="h-3 w-3" />
                 {first?.departureTime ? fmtTime(first.departureTime) : '--'} - {last?.arrivalTime ? fmtTime(last.arrivalTime) : '--'}
@@ -63,24 +63,24 @@ function OfferCard({ offer, bookAction }: { offer: FlightOffer; bookAction: (for
             </div>
           </div>
 
-          <form action={bookAction} className="shrink-0">
+          <form action={bookAction} className="shrink-0 w-full lg:w-auto">
             <input type="hidden" name="offerId" value={offer.id} />
-            <Button type="submit">Book Now</Button>
+            <Button type="submit" className="w-full lg:w-auto">Book Now</Button>
           </form>
         </div>
 
         {offer.segments.length > 0 && (
-          <div className="mt-4 space-y-2 rounded-md border bg-muted/30 p-3">
+          <div className="mt-4 space-y-2 rounded-md border bg-muted/30 p-2 sm:p-3">
             {offer.segments.map((seg, idx) => (
               <div key={`${offer.id}-${idx}`} className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-                <div className="text-sm">
+                <div className="text-sm min-w-0">
                   <span className="font-medium">{seg.marketingCarrier}{seg.flightNumber.replace(seg.marketingCarrier, '')}</span>
-                  <span className="text-muted-foreground">  {seg.from}  {seg.to}</span>
+                  <span className="text-muted-foreground">  {seg.from} → {seg.to}</span>
                 </div>
-                <div className="text-sm text-muted-foreground">
+                <div className="text-sm text-muted-foreground truncate">
                   {fmtTime(seg.departureTime)} - {fmtTime(seg.arrivalTime)}
-                  {seg.duration ? `  ${fmtDuration(seg.duration)}` : ''}
-                  {seg.aircraft ? `  ${seg.aircraft}` : ''}
+                  {seg.duration ? ` · ${fmtDuration(seg.duration)}` : ''}
+                  {seg.aircraft ? ` · ${seg.aircraft}` : ''}
                 </div>
               </div>
             ))}

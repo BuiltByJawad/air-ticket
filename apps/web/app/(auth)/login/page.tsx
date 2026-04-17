@@ -29,7 +29,7 @@ export default async function LoginPage({
         : null;
 
   return (
-    <div className="flex min-h-screen">
+    <div className="flex min-h-svh">
       <CleanErrorParam />
       {/* Left: Branding panel (hidden on mobile) */}
       <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 text-white flex-col justify-between p-12">
@@ -50,7 +50,7 @@ export default async function LoginPage({
       </div>
 
       {/* Right: Login form */}
-      <div className="flex w-full items-center justify-center p-6 lg:w-1/2 lg:p-12">
+      <div className="flex w-full items-center justify-center p-4 sm:p-6 lg:w-1/2 lg:p-12">
         <Card className="w-full max-w-md border-0 shadow-none lg:border lg:shadow-sm">
           <CardHeader className="text-center">
             <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary lg:hidden">

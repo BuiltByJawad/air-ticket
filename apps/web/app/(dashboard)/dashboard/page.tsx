@@ -47,7 +47,7 @@ export default async function DashboardHomePage() {
             <BookOpen className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-xl font-bold sm:text-2xl">{totalBookings}</div>
+            <div className="text-xl font-bold sm:text-2xl truncate">{totalBookings}</div>
           </CardContent>
         </Card>
 
@@ -67,7 +67,7 @@ export default async function DashboardHomePage() {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-xl font-bold sm:text-2xl">{currency} {totalRevenue.toFixed(2)}</div>
+            <div className="text-xl font-bold sm:text-2xl truncate">{currency} {totalRevenue.toFixed(2)}</div>
           </CardContent>
         </Card>
 
@@ -78,7 +78,7 @@ export default async function DashboardHomePage() {
           </CardHeader>
           <CardContent>
             <div className="text-xl font-bold sm:text-2xl">
-              {currency} {totalBookings > 0 ? (totalRevenue / totalBookings).toFixed(2) : '0.00'}
+              <span className="truncate">{currency} {totalBookings > 0 ? (totalRevenue / totalBookings).toFixed(2) : '0.00'}</span>
             </div>
           </CardContent>
         </Card>

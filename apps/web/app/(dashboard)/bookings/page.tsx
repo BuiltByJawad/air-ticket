@@ -51,7 +51,7 @@ export default async function BookingsPage() {
                   <div className="space-y-1.5">
                     <div className="flex items-center gap-2">
                       <Receipt className="h-4 w-4 text-muted-foreground" />
-                      <p className="font-semibold text-sm sm:text-base">{b.offerId}</p>
+                      <p className="font-semibold text-sm sm:text-base truncate">{b.offerId}</p>
                       <StatusBadge status={b.status} />
                     </div>
                     <div className="flex items-center gap-4 text-sm text-muted-foreground">
