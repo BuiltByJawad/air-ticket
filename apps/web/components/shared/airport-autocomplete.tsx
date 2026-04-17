@@ -198,7 +198,7 @@ export function AirportAutocomplete({
           <div
             ref={menuRef}
             style={{ top: menuRect.top, left: menuRect.left, width: menuRect.width }}
-            className="fixed z-[9999] rounded-lg border border-border bg-popover shadow-xl max-h-64 overflow-y-auto"
+            className="fixed z-[9999] rounded-lg border border-border bg-white dark:bg-slate-950 shadow-xl max-h-64 overflow-y-auto"
           >
             {results.map((airport, idx) => (
               <button
