@@ -82,14 +82,14 @@ export default async function FlightsPage({
         <p className="text-muted-foreground">Find and book flights for your customers.</p>
       </div>
 
-      <Card>
+      <Card className="overflow-visible">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Search className="h-5 w-5" />
             Search Flights
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="overflow-visible">
           <FlightSearchForm />
         </CardContent>
       </Card>
