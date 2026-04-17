@@ -122,7 +122,7 @@ export function AirportAutocomplete({
   const IconComponent = icon === 'from' ? PlaneTakeoff : PlaneLanding;
 
   return (
-    <div ref={containerRef} className="relative">
+    <div ref={containerRef} className={cn('relative', open && 'z-50')}>
       <label htmlFor={id} className="text-sm font-medium flex items-center gap-0.5 mb-1.5">
         {label}
         <span className="text-destructive">*</span>
@@ -163,7 +163,7 @@ export function AirportAutocomplete({
       {error && <p className="text-xs text-destructive mt-1">{error}</p>}
 
       {open && results.length > 0 && (
-        <div className="absolute z-50 mt-1 w-full rounded-lg border border-border bg-popover shadow-xl max-h-64 overflow-y-auto">
+        <div className="absolute z-[100] mt-1 w-full rounded-lg border border-border bg-popover shadow-xl max-h-64 overflow-y-auto">
           {results.map((airport, idx) => (
             <button
               key={`${airport.iata}-${idx}`}
