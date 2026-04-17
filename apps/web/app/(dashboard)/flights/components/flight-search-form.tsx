@@ -54,7 +54,7 @@ function FlightSearchFormInner() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-[1fr_auto_1fr]">
+      <div className="grid gap-4 lg:grid-cols-[1fr_auto_1fr]">
         <AirportAutocomplete
           id="origin"
           name="origin"
@@ -66,8 +66,8 @@ function FlightSearchFormInner() {
           placeholder="Search city or airport"
         />
 
-        <div className="flex items-end pb-1.5 justify-center">
-          <Button type="button" variant="ghost" size="icon" className="h-10 w-10 rounded-full" onClick={swapAirports}>
+        <div className="flex items-end pb-1.5 lg:justify-center">
+          <Button type="button" variant="ghost" className="h-10 w-full lg:w-10 lg:rounded-full" onClick={swapAirports}>
             <ArrowRightLeft className="h-4 w-4" />
           </Button>
         </div>
@@ -84,7 +84,7 @@ function FlightSearchFormInner() {
         />
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_auto]">
+      <div className="grid gap-4 lg:grid-cols-[1fr_1fr_auto]">
         <FormField id="departureDate" label="Departure Date" required error={errors.departureDate}>
           <DatePicker
             id="departureDate"

@@ -129,7 +129,7 @@ export function DatePicker({
       <input type="hidden" name={name} value={selectedDate} />
 
       {open && (
-        <div className="absolute z-50 mt-1 w-72 rounded-lg border bg-popover p-3 shadow-lg animate-in fade-in-0 zoom-in-95">
+        <div className="absolute z-50 mt-1 w-[calc(100vw-2rem)] max-w-72 rounded-lg border bg-popover p-3 shadow-lg animate-in fade-in-0 zoom-in-95">
           <div className="flex items-center justify-between mb-3">
             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={prevMonth} type="button">
               <ChevronLeft className="h-4 w-4" />
