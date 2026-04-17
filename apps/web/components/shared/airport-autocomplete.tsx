@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { PlaneTakeoff, PlaneLanding, X, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -37,7 +38,9 @@ export function AirportAutocomplete({
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [selected, setSelected] = useState<AirportSuggestion | null>(null);
+  const [menuRect, setMenuRect] = useState<{ top: number; left: number; width: number } | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   // Sync external value → selected airport display
@@ -55,13 +58,41 @@ export function AirportAutocomplete({
   // Close dropdown on outside click
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
+      const target = e.target as Node;
+      const clickedInInput = !!containerRef.current?.contains(target);
+      const clickedInMenu = !!menuRef.current?.contains(target);
+      if (!clickedInInput && !clickedInMenu) setOpen(false);
     }
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  // Track menu position when open (portal needs fixed coordinates)
+  useEffect(() => {
+    if (!open) {
+      setMenuRect(null);
+      return;
+    }
+
+    const update = () => {
+      const el = containerRef.current;
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      setMenuRect({
+        top: rect.bottom + 4,
+        left: rect.left,
+        width: rect.width
+      });
+    };
+
+    update();
+    window.addEventListener('resize', update);
+    window.addEventListener('scroll', update, true);
+    return () => {
+      window.removeEventListener('resize', update);
+      window.removeEventListener('scroll', update, true);
+    };
+  }, [open]);
 
   const fetchSuggestions = useCallback(async (text: string) => {
     if (!text || text.length < 1) {
@@ -122,7 +153,7 @@ export function AirportAutocomplete({
   const IconComponent = icon === 'from' ? PlaneTakeoff : PlaneLanding;
 
   return (
-    <div ref={containerRef} className={cn('relative', open && 'z-50')}>
+    <div ref={containerRef} className="relative">
       <label htmlFor={id} className="text-sm font-medium flex items-center gap-0.5 mb-1.5">
         {label}
         <span className="text-destructive">*</span>
@@ -162,29 +193,35 @@ export function AirportAutocomplete({
       </div>
       {error && <p className="text-xs text-destructive mt-1">{error}</p>}
 
-      {open && results.length > 0 && (
-        <div className="absolute z-[100] mt-1 w-full rounded-lg border border-border bg-popover shadow-xl max-h-64 overflow-y-auto">
-          {results.map((airport, idx) => (
-            <button
-              key={`${airport.iata}-${idx}`}
-              type="button"
-              onClick={() => selectAirport(airport)}
-              className={cn(
-                'flex items-center gap-3 w-full px-3 py-2.5 text-left text-sm hover:bg-accent transition-colors',
-                'border-b border-border last:border-b-0'
-              )}
-            >
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary font-bold text-xs">
-                {airport.iata}
-              </div>
-              <div className="min-w-0">
-                <p className="font-medium truncate">{airport.city}, {airport.country}</p>
-                <p className="text-xs text-muted-foreground truncate">{airport.name}</p>
-              </div>
-            </button>
-          ))}
-        </div>
-      )}
+      {open && results.length > 0 && menuRect &&
+        createPortal(
+          <div
+            ref={menuRef}
+            style={{ top: menuRect.top, left: menuRect.left, width: menuRect.width }}
+            className="fixed z-[9999] rounded-lg border border-border bg-popover shadow-xl max-h-64 overflow-y-auto"
+          >
+            {results.map((airport, idx) => (
+              <button
+                key={`${airport.iata}-${idx}`}
+                type="button"
+                onClick={() => selectAirport(airport)}
+                className={cn(
+                  'flex items-center gap-3 w-full px-3 py-2.5 text-left text-sm hover:bg-accent transition-colors',
+                  'border-b border-border last:border-b-0'
+                )}
+              >
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary font-bold text-xs">
+                  {airport.iata}
+                </div>
+                <div className="min-w-0">
+                  <p className="font-medium truncate">{airport.city}, {airport.country}</p>
+                  <p className="text-xs text-muted-foreground truncate">{airport.name}</p>
+                </div>
+              </button>
+            ))}
+          </div>,
+          document.body
+        )}
     </div>
   );
 }
