@@ -2,8 +2,14 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { PlaneTakeoff, PlaneLanding, X, Loader2 } from 'lucide-react';
-import { suggestAirports, type AirportSuggestion } from '@/lib/api/api-client';
 import { cn } from '@/lib/utils';
+
+interface AirportSuggestion {
+  iata: string;
+  name: string;
+  city: string;
+  country: string;
+}
 
 interface AirportAutocompleteProps {
   id: string;
@@ -14,7 +20,6 @@ interface AirportAutocompleteProps {
   onChange: (iata: string) => void;
   error?: string;
   placeholder?: string;
-  token: string;
 }
 
 export function AirportAutocomplete({
@@ -25,8 +30,7 @@ export function AirportAutocomplete({
   value,
   onChange,
   error,
-  placeholder = 'Search city or airport',
-  token
+  placeholder = 'Search city or airport'
 }: AirportAutocompleteProps) {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<AirportSuggestion[]>([]);
@@ -69,7 +73,8 @@ export function AirportAutocomplete({
 
     setLoading(true);
     try {
-      const matches = await suggestAirports(token, text);
+      const res = await fetch(`/api/airports?q=${encodeURIComponent(text)}`);
+      const matches: AirportSuggestion[] = res.ok ? await res.json() : [];
       setResults(matches);
       setOpen(matches.length > 0);
     } catch {
@@ -78,7 +83,7 @@ export function AirportAutocomplete({
     } finally {
       setLoading(false);
     }
-  }, [token]);
+  }, []);
 
   function handleInputChange(text: string) {
     setQuery(text);
