@@ -74,7 +74,13 @@ export function AirportAutocomplete({
     setLoading(true);
     try {
       const res = await fetch(`/api/airports?q=${encodeURIComponent(text)}`);
-      const matches: AirportSuggestion[] = res.ok ? await res.json() : [];
+      const raw: AirportSuggestion[] = res.ok ? await res.json() : [];
+      const seen = new Set<string>();
+      const matches = raw.filter((a) => {
+        if (seen.has(a.iata)) return false;
+        seen.add(a.iata);
+        return true;
+      });
       setResults(matches);
       setOpen(matches.length > 0);
     } catch {
@@ -158,9 +164,9 @@ export function AirportAutocomplete({
 
       {open && results.length > 0 && (
         <div className="absolute z-50 mt-1 w-full rounded-lg border bg-popover shadow-lg max-h-64 overflow-y-auto">
-          {results.map((airport) => (
+          {results.map((airport, idx) => (
             <button
-              key={airport.iata}
+              key={`${airport.iata}-${idx}`}
               type="button"
               onClick={() => selectAirport(airport)}
               className={cn(
