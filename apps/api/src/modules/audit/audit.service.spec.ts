@@ -7,13 +7,17 @@ describe('AuditService', () => {
   let prisma: {
     auditLog: {
       create: jest.Mock;
+      findMany: jest.Mock;
+      count: jest.Mock;
     };
   };
 
   beforeEach(async () => {
     prisma = {
       auditLog: {
-        create: jest.fn().mockResolvedValue({ id: 'log-1' })
+        create: jest.fn().mockResolvedValue({ id: 'log-1' }),
+        findMany: jest.fn().mockResolvedValue([]),
+        count: jest.fn().mockResolvedValue(0)
       }
     };
 
@@ -80,6 +84,31 @@ describe('AuditService', () => {
       expect(call.data.agencyId).toBeUndefined();
       expect(call.data.userId).toBeUndefined();
       expect(call.data.requestId).toBeUndefined();
+    });
+  });
+
+  describe('listLogs', () => {
+    it('should return paginated audit logs', async () => {
+      const mockLogs = [{ id: 'log-1', action: 'auth.login' }];
+      prisma.auditLog.findMany.mockResolvedValue(mockLogs);
+      prisma.auditLog.count.mockResolvedValue(1);
+
+      const result = await service.listLogs({ limit: 10, offset: 0 });
+
+      expect(result.items).toEqual(mockLogs);
+      expect(result.total).toBe(1);
+      expect(result.limit).toBe(10);
+      expect(result.offset).toBe(0);
+    });
+
+    it('should apply filters when provided', async () => {
+      await service.listLogs({ action: 'auth.login', resource: 'user' });
+
+      expect(prisma.auditLog.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { action: 'auth.login', resource: 'user' }
+        })
+      );
     });
   });
 });

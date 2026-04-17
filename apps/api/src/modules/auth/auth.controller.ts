@@ -1,38 +1,29 @@
-import { Body, Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, HttpStatus, Post, Req } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import type { Request } from 'express';
 import { AuthService } from './auth.service';
-import { JwtAuthGuard } from './jwt-auth.guard';
 import { CurrentUser, type CurrentUserData } from './current-user.decorator';
 import { AuditService } from '../audit/audit.service';
-import { UsersService } from '../users/users.service';
-import { AgenciesService } from '../agencies/agencies.service';
+import { Public } from './public.decorator';
+import { RegisterDto } from './dto/register.dto';
+import { LoginDto } from './dto/login.dto';
 
-interface RegisterBody {
-  email: string;
-  password: string;
-  name?: string;
-  phone?: string;
-  agencyName: string;
-}
-
-interface LoginBody {
-  email: string;
-  password: string;
-}
-
+@ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
   constructor(
     private readonly authService: AuthService,
-    private readonly auditService: AuditService,
-    private readonly usersService: UsersService,
-    private readonly agenciesService: AgenciesService
+    private readonly auditService: AuditService
   ) {}
 
+  @Public()
   @Post('register')
+  @HttpCode(HttpStatus.CREATED)
   @Throttle({ default: { ttl: 60_000, limit: 5 } })
-  async register(@Req() req: Request, @Body() body: RegisterBody) {
+  @ApiOperation({ summary: 'Register a new agency and agent user' })
+  @ApiResponse({ status: HttpStatus.CREATED, description: 'User registered' })
+  async register(@Req() req: Request, @Body() body: RegisterDto) {
     const result = await this.authService.register(body);
     await this.auditService.log({
       action: 'auth.register',
@@ -44,9 +35,13 @@ export class AuthController {
     return result;
   }
 
+  @Public()
   @Post('login')
+  @HttpCode(HttpStatus.OK)
   @Throttle({ default: { ttl: 60_000, limit: 5 } })
-  async login(@Req() req: Request, @Body() body: LoginBody) {
+  @ApiOperation({ summary: 'Login with email and password' })
+  @ApiResponse({ status: HttpStatus.OK, description: 'Login successful' })
+  async login(@Req() req: Request, @Body() body: LoginDto) {
     const result = await this.authService.login(body);
     await this.auditService.log({
       action: 'auth.login',
@@ -60,25 +55,11 @@ export class AuthController {
     return result;
   }
 
-  @UseGuards(JwtAuthGuard)
   @Get('me')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get current user profile' })
+  @ApiResponse({ status: HttpStatus.OK, description: 'Profile retrieved' })
   async me(@CurrentUser() user: CurrentUserData) {
-    const dbUser = await this.usersService.findByEmail(user.email);
-    let agency: { id: string; name: string } | null = null;
-    if (dbUser?.agencyId) {
-      const a = await this.agenciesService.findById(dbUser.agencyId);
-      if (a) agency = { id: a.id, name: a.name };
-    }
-    return {
-      user: {
-        sub: user.sub,
-        email: user.email,
-        role: user.role,
-        agencyId: user.agencyId,
-        name: dbUser?.name ?? null,
-        phone: dbUser?.phone ?? null,
-        agency
-      }
-    };
+    return this.authService.getProfile(user);
   }
 }

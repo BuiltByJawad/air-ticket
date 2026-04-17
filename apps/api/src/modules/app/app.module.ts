@@ -10,6 +10,7 @@ import { BookingsModule } from '../bookings/bookings.module';
 import { AuditModule } from '../audit/audit.module';
 import { RequestIdMiddleware } from './request-id.middleware';
 import { LoggerMiddleware } from './logger.middleware';
+import { RolesGuard } from '../auth/roles.guard';
 
 @Module({
   imports: [
@@ -22,7 +23,10 @@ import { LoggerMiddleware } from './logger.middleware';
     AuditModule
   ],
   controllers: [HealthController],
-  providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }]
+  providers: [
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
+    { provide: APP_GUARD, useClass: RolesGuard }
+  ]
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer): void {

@@ -1,18 +1,15 @@
-import { Body, Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, HttpStatus, Post, Req } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import type { Request } from 'express';
-import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 import { Roles } from '../../auth/roles.decorator';
-import { RolesGuard } from '../../auth/roles.guard';
 import { CurrentUser, type CurrentUserData } from '../../auth/current-user.decorator';
 import { AgenciesService } from '../agencies.service';
 import { AuditService } from '../../audit/audit.service';
+import { CreateAgencyDto } from '../dto/create-agency.dto';
 
-interface CreateAgencyBody {
-  name: string;
-}
-
+@ApiTags('Admin - Agencies')
+@ApiBearerAuth()
 @Controller('admin/agencies')
-@UseGuards(JwtAuthGuard, RolesGuard)
 @Roles('admin')
 export class AdminAgenciesController {
   constructor(
@@ -21,12 +18,17 @@ export class AdminAgenciesController {
   ) {}
 
   @Get()
+  @ApiOperation({ summary: 'List all agencies' })
+  @ApiResponse({ status: HttpStatus.OK, description: 'Agencies listed' })
   async list() {
     return this.agenciesService.listAll();
   }
 
   @Post()
-  async create(@Req() req: Request, @CurrentUser() user: CurrentUserData, @Body() body: CreateAgencyBody) {
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Create a new agency' })
+  @ApiResponse({ status: HttpStatus.CREATED, description: 'Agency created' })
+  async create(@Req() req: Request, @CurrentUser() user: CurrentUserData, @Body() body: CreateAgencyDto) {
     const result = await this.agenciesService.create({ name: body.name });
     await this.auditService.log({
       action: 'admin.create_agency',

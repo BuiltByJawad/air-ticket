@@ -1,71 +1,46 @@
-import { BadRequestException, Body, Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, HttpStatus, Post, Req } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import type { Request } from 'express';
-import * as bcrypt from 'bcryptjs';
-import { z } from 'zod';
-import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 import { Roles } from '../../auth/roles.decorator';
-import { RolesGuard } from '../../auth/roles.guard';
 import { CurrentUser, type CurrentUserData } from '../../auth/current-user.decorator';
-import { AgenciesService } from '../agencies.service';
 import { UsersService } from '../../users/users.service';
 import { AuditService } from '../../audit/audit.service';
+import { CreateAgentDto } from '../dto/create-agent.dto';
 
-const CreateAgentBodySchema = z.object({
-  agencyId: z.string().min(1),
-  email: z.string().email(),
-  password: z.string().min(8)
-});
-
-type CreateAgentBody = z.infer<typeof CreateAgentBodySchema>;
-
+@ApiTags('Admin - Users')
+@ApiBearerAuth()
 @Controller('admin/users')
-@UseGuards(JwtAuthGuard, RolesGuard)
 @Roles('admin')
 export class AdminUsersController {
   constructor(
     private readonly usersService: UsersService,
-    private readonly agenciesService: AgenciesService,
     private readonly auditService: AuditService
   ) {}
 
   @Get()
+  @ApiOperation({ summary: 'List all users' })
+  @ApiResponse({ status: HttpStatus.OK, description: 'Users listed' })
   async list() {
     return this.usersService.listAll();
   }
 
   @Post('agents')
-  async createAgent(@Req() req: Request, @CurrentUser() caller: CurrentUserData, @Body() body: CreateAgentBody) {
-    const parsed = CreateAgentBodySchema.parse(body);
-    const passwordHash = await bcrypt.hash(parsed.password, 12);
-
-    const agency = await this.agenciesService.findById(parsed.agencyId);
-    if (!agency) {
-      throw new BadRequestException('Invalid agencyId');
-    }
-
-    const user = await this.usersService.create({
-      email: parsed.email,
-      passwordHash,
-      role: 'agent',
-      agencyId: parsed.agencyId
-    });
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Create a new agent user' })
+  @ApiResponse({ status: HttpStatus.CREATED, description: 'Agent created' })
+  async createAgent(@Req() req: Request, @CurrentUser() caller: CurrentUserData, @Body() body: CreateAgentDto) {
+    const user = await this.usersService.createAgent(body);
 
     await this.auditService.log({
       action: 'admin.create_agent',
       resource: 'user',
       resourceId: user.id,
-      agencyId: parsed.agencyId,
+      agencyId: body.agencyId,
       userId: caller.sub,
       requestId: req.requestId,
-      metadata: { email: parsed.email, agencyId: parsed.agencyId }
+      metadata: { email: body.email, agencyId: body.agencyId }
     });
 
-    return {
-      id: user.id,
-      email: user.email,
-      role: user.role,
-      agencyId: user.agencyId,
-      createdAt: user.createdAt
-    };
+    return user;
   }
 }

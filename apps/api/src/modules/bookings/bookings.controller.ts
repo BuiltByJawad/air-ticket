@@ -1,26 +1,16 @@
-import { BadRequestException, Body, Controller, Get, Param, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, HttpStatus, Param, Patch, Post, Query, Req } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import type { Request } from 'express';
-import { z } from 'zod';
 import { CurrentUser, type CurrentUserData } from '../auth/current-user.decorator';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Roles } from '../auth/roles.decorator';
-import { RolesGuard } from '../auth/roles.guard';
 import { BookingsService } from './bookings.service';
 import { AuditService } from '../audit/audit.service';
+import { CreateBookingDto } from './dto/create-booking.dto';
+import { ListBookingsQueryDto } from './dto/list-bookings-query.dto';
 
-const CreateBookingBodySchema = z.object({
-  offerId: z.string().min(1),
-  offerData: z.unknown(),
-  currency: z.string().min(3).max(3),
-  amount: z.string().min(1)
-});
-
-const ListBookingsQuerySchema = z.object({
-  agencyId: z.string().min(1).optional()
-});
-
+@ApiTags('Bookings')
+@ApiBearerAuth()
 @Controller('bookings')
-@UseGuards(JwtAuthGuard, RolesGuard)
 export class BookingsController {
   constructor(
     private readonly bookingsService: BookingsService,
@@ -28,14 +18,12 @@ export class BookingsController {
   ) {}
 
   @Post()
+  @HttpCode(HttpStatus.CREATED)
   @Roles('agent')
-  async create(@Req() req: Request, @CurrentUser() user: CurrentUserData, @Body() body: unknown) {
-    const parsed = CreateBookingBodySchema.safeParse(body);
-    if (!parsed.success) {
-      throw new BadRequestException('Invalid booking input');
-    }
-
-    const booking = await this.bookingsService.createForAgent(user, parsed.data);
+  @ApiOperation({ summary: 'Create a new booking' })
+  @ApiResponse({ status: HttpStatus.CREATED, description: 'Booking created' })
+  async create(@Req() req: Request, @CurrentUser() user: CurrentUserData, @Body() body: CreateBookingDto) {
+    const booking = await this.bookingsService.createForAgent(user, body);
     await this.auditService.log({
       action: 'booking.create',
       resource: 'booking',
@@ -43,30 +31,31 @@ export class BookingsController {
       agencyId: user.agencyId,
       userId: user.sub,
       requestId: req.requestId,
-      metadata: { offerId: parsed.data.offerId, amount: parsed.data.amount, currency: parsed.data.currency }
+      metadata: { offerId: body.offerId, amount: body.amount, currency: body.currency }
     });
     return booking;
   }
 
   @Get()
   @Roles('agent', 'admin')
-  async list(@CurrentUser() user: CurrentUserData, @Query() query: unknown) {
-    const parsed = ListBookingsQuerySchema.safeParse(query);
-    if (!parsed.success) {
-      throw new BadRequestException('Invalid query');
-    }
-
-    return this.bookingsService.listForUser(user, parsed.data);
+  @ApiOperation({ summary: 'List bookings' })
+  @ApiResponse({ status: HttpStatus.OK, description: 'Bookings listed' })
+  async list(@CurrentUser() user: CurrentUserData, @Query() query: ListBookingsQueryDto) {
+    return this.bookingsService.listForUser(user, query);
   }
 
   @Get(':id')
   @Roles('agent', 'admin')
+  @ApiOperation({ summary: 'Get booking by ID' })
+  @ApiResponse({ status: HttpStatus.OK, description: 'Booking retrieved' })
   async getById(@CurrentUser() user: CurrentUserData, @Param('id') id: string) {
     return this.bookingsService.getByIdForUser(user, id);
   }
 
   @Patch(':id/confirm')
   @Roles('agent')
+  @ApiOperation({ summary: 'Confirm a draft booking' })
+  @ApiResponse({ status: HttpStatus.OK, description: 'Booking confirmed' })
   async confirm(@Req() req: Request, @CurrentUser() user: CurrentUserData, @Param('id') id: string) {
     const booking = await this.bookingsService.confirmForAgent(user, id);
     await this.auditService.log({
@@ -83,6 +72,8 @@ export class BookingsController {
 
   @Patch(':id/cancel')
   @Roles('agent')
+  @ApiOperation({ summary: 'Cancel a booking' })
+  @ApiResponse({ status: HttpStatus.OK, description: 'Booking cancelled' })
   async cancel(@Req() req: Request, @CurrentUser() user: CurrentUserData, @Param('id') id: string) {
     const booking = await this.bookingsService.cancelForAgent(user, id);
     await this.auditService.log({

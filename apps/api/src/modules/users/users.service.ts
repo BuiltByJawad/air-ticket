@@ -1,5 +1,7 @@
-import { Injectable } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import * as bcrypt from 'bcryptjs';
 import { PrismaService } from '../prisma/prisma.service';
+import { AgenciesService } from '../agencies/agencies.service';
 
 export type UserRole = 'agent' | 'admin';
 
@@ -14,9 +16,22 @@ export interface User {
   agencyId: string | null;
 }
 
+export interface UserPublic {
+  id: string;
+  email: string;
+  name: string | null;
+  phone: string | null;
+  role: UserRole;
+  agencyId: string | null;
+  createdAt: Date;
+}
+
 @Injectable()
 export class UsersService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly agenciesService: AgenciesService
+  ) {}
 
   async findByEmail(email: string): Promise<User | null> {
     const user = await this.prisma.user.findUnique({
@@ -39,7 +54,7 @@ export class UsersService {
     };
   }
 
-  async listAll(): Promise<Array<Omit<User, 'passwordHash'>>> {
+  async listAll(): Promise<UserPublic[]> {
     const rows = await this.prisma.user.findMany({
       orderBy: { createdAt: 'desc' },
       select: { id: true, email: true, name: true, phone: true, role: true, createdAt: true, agencyId: true }
@@ -54,7 +69,7 @@ export class UsersService {
       where: { email }
     });
     if (existing) {
-      throw new Error('User already exists');
+      throw new ConflictException('User already exists');
     }
 
     const created = await this.prisma.user.create({
@@ -77,6 +92,31 @@ export class UsersService {
       role: created.role,
       createdAt: created.createdAt,
       agencyId: created.agencyId
+    };
+  }
+
+  async createAgent(input: { agencyId: string; email: string; password: string }): Promise<UserPublic> {
+    const agency = await this.agenciesService.findById(input.agencyId);
+    if (!agency) {
+      throw new NotFoundException('Agency not found');
+    }
+
+    const passwordHash = await bcrypt.hash(input.password, 12);
+    const user = await this.create({
+      email: input.email,
+      passwordHash,
+      role: 'agent',
+      agencyId: input.agencyId
+    });
+
+    return {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      phone: user.phone,
+      role: user.role,
+      agencyId: user.agencyId,
+      createdAt: user.createdAt
     };
   }
 }

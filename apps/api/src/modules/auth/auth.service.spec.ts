@@ -4,6 +4,7 @@ import { UnauthorizedException } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { UsersService } from '../users/users.service';
 import { AgenciesService } from '../agencies/agencies.service';
+import { PrismaService } from '../prisma/prisma.service';
 
 jest.mock('bcryptjs', () => ({
   ...jest.requireActual('bcryptjs'),
@@ -16,6 +17,7 @@ describe('AuthService', () => {
   let usersService: Partial<Record<keyof UsersService, jest.Mock>>;
   let agenciesService: Partial<Record<keyof AgenciesService, jest.Mock>>;
   let jwtService: Partial<Record<keyof JwtService, jest.Mock>>;
+  let prismaService: { user: { findUnique: jest.Mock } };
 
   const mockUser = {
     id: 'user-1',
@@ -37,13 +39,19 @@ describe('AuthService', () => {
     jwtService = {
       signAsync: jest.fn().mockResolvedValue('jwt-token')
     };
+    prismaService = {
+      user: {
+        findUnique: jest.fn()
+      }
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AuthService,
         { provide: UsersService, useValue: usersService },
         { provide: AgenciesService, useValue: agenciesService },
-        { provide: JwtService, useValue: jwtService }
+        { provide: JwtService, useValue: jwtService },
+        { provide: PrismaService, useValue: prismaService }
       ]
     }).compile();
 
@@ -64,14 +72,6 @@ describe('AuthService', () => {
       expect(usersService.create).toHaveBeenCalledWith(
         expect.objectContaining({ email: 'agent@test.com', role: 'agent' })
       );
-    });
-
-    it('should reject invalid email', async () => {
-      await expect(service.register({ email: 'bad', password: 'password123', agencyName: 'Test Agency' })).rejects.toThrow();
-    });
-
-    it('should reject password shorter than 8 chars', async () => {
-      await expect(service.register({ email: 'a@b.com', password: 'short', agencyName: 'Test Agency' })).rejects.toThrow();
     });
   });
 
@@ -103,6 +103,48 @@ describe('AuthService', () => {
       await expect(service.login({ email: 'agent@test.com', password: 'wrong' })).rejects.toThrow(
         UnauthorizedException
       );
+    });
+  });
+
+  describe('getProfile', () => {
+    it('should return user profile with agency from single query', async () => {
+      prismaService.user.findUnique.mockResolvedValue({
+        ...mockUser,
+        name: 'Test Agent',
+        phone: '+8801712345678',
+        agency: { id: 'agency-1', name: 'Test Agency' }
+      });
+
+      const result = await service.getProfile({
+        sub: 'user-1',
+        email: 'agent@test.com',
+        role: 'agent',
+        agencyId: 'agency-1'
+      });
+
+      expect(result.user.name).toBe('Test Agent');
+      expect(result.user.agency).toEqual({ id: 'agency-1', name: 'Test Agency' });
+      expect(prismaService.user.findUnique).toHaveBeenCalledWith({
+        where: { id: 'user-1' },
+        include: { agency: { select: { id: true, name: true } } }
+      });
+    });
+
+    it('should return null agency when user has no agency', async () => {
+      prismaService.user.findUnique.mockResolvedValue({
+        ...mockUser,
+        agencyId: null,
+        agency: null
+      });
+
+      const result = await service.getProfile({
+        sub: 'user-1',
+        email: 'agent@test.com',
+        role: 'admin',
+        agencyId: null
+      });
+
+      expect(result.user.agency).toBeNull();
     });
   });
 });

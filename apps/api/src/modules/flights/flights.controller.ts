@@ -1,54 +1,40 @@
-import { BadRequestException, Body, Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
-import { z } from 'zod';
+import { Body, Controller, Get, HttpCode, HttpStatus, Post, Query } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { CurrentUser, type CurrentUserData } from '../auth/current-user.decorator';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { FlightsService } from './flights.service';
+import { Public } from '../auth/public.decorator';
+import { SearchFlightDto } from './dto/search-flight.dto';
+import { QuoteFlightDto } from './dto/quote-flight.dto';
 
-const SearchBodySchema = z.object({
-  origin: z.string().min(3).max(3),
-  destination: z.string().min(3).max(3),
-  departureDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-  adults: z.number().int().min(1).max(9),
-  limit: z.number().int().min(1).max(100).optional(),
-  after: z.string().min(1).optional()
-});
-
-const QuoteBodySchema = z.object({
-  offerId: z.string().min(1)
-});
-
+@ApiTags('Flights')
 @Controller('flights')
-@UseGuards(JwtAuthGuard)
 export class FlightsController {
   constructor(private readonly flightsService: FlightsService) {}
 
+  @Public()
   @Get('airports')
+  @ApiOperation({ summary: 'Suggest airports by query' })
+  @ApiResponse({ status: HttpStatus.OK, description: 'Airport suggestions' })
   async suggestAirports(@Query('q') query: string) {
     if (!query || query.length < 1) return [];
     return this.flightsService.suggestAirports(query);
   }
 
   @Post('search')
-  async search(@CurrentUser() user: CurrentUserData, @Body() body: unknown) {
-    const parsed = SearchBodySchema.safeParse(body);
-    if (!parsed.success) {
-      throw new BadRequestException('Invalid search input');
-    }
-
-    return this.flightsService.search(user, parsed.data);
+  @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Search for flight offers' })
+  @ApiResponse({ status: HttpStatus.OK, description: 'Flight offers found' })
+  async search(@CurrentUser() user: CurrentUserData, @Body() body: SearchFlightDto) {
+    return this.flightsService.search(user, body);
   }
 
   @Post('quote')
-  async quote(@CurrentUser() user: CurrentUserData, @Body() body: unknown) {
-    const parsed = QuoteBodySchema.safeParse(body);
-    if (!parsed.success) {
-      throw new BadRequestException('Invalid quote input');
-    }
-
-    try {
-      return await this.flightsService.quote(user, parsed.data);
-    } catch {
-      throw new BadRequestException('Invalid offerId');
-    }
+  @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get a quote for a specific offer' })
+  @ApiResponse({ status: HttpStatus.OK, description: 'Quote retrieved' })
+  async quote(@CurrentUser() user: CurrentUserData, @Body() body: QuoteFlightDto) {
+    return this.flightsService.quote(user, body);
   }
 }

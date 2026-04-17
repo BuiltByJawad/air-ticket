@@ -1,22 +1,10 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import * as bcrypt from 'bcryptjs';
 import { JwtService } from '@nestjs/jwt';
-import { z } from 'zod';
 import { UsersService, type UserRole } from '../users/users.service';
 import { AgenciesService } from '../agencies/agencies.service';
-
-const RegisterInputSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(8),
-  name: z.string().min(1).optional(),
-  phone: z.string().min(1).optional(),
-  agencyName: z.string().min(1)
-});
-
-const LoginInputSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(1)
-});
+import { PrismaService } from '../prisma/prisma.service';
+import type { CurrentUserData } from './current-user.decorator';
 
 export interface AuthTokenResponse {
   accessToken: string;
@@ -28,26 +16,37 @@ export interface AuthTokenResponse {
   };
 }
 
+export interface ProfileResponse {
+  user: {
+    sub: string;
+    email: string;
+    role: 'agent' | 'admin';
+    agencyId: string | null;
+    name: string | null;
+    phone: string | null;
+    agency: { id: string; name: string } | null;
+  };
+}
+
 @Injectable()
 export class AuthService {
   constructor(
     private readonly usersService: UsersService,
     private readonly agenciesService: AgenciesService,
-    private readonly jwtService: JwtService
+    private readonly jwtService: JwtService,
+    private readonly prisma: PrismaService
   ) {}
 
   async register(input: { email: string; password: string; name?: string; phone?: string; agencyName: string }): Promise<AuthTokenResponse> {
-    const parsed = RegisterInputSchema.parse(input);
+    const agency = await this.agenciesService.create({ name: input.agencyName });
 
-    const agency = await this.agenciesService.create({ name: parsed.agencyName });
-
-    const passwordHash = await bcrypt.hash(parsed.password, 12);
+    const passwordHash = await bcrypt.hash(input.password, 12);
     const user = await this.usersService.create({
-      email: parsed.email,
+      email: input.email,
       passwordHash,
       role: 'agent',
-      name: parsed.name,
-      phone: parsed.phone,
+      name: input.name,
+      phone: input.phone,
       agencyId: agency.id
     });
 
@@ -55,19 +54,36 @@ export class AuthService {
   }
 
   async login(input: { email: string; password: string }): Promise<AuthTokenResponse> {
-    const parsed = LoginInputSchema.parse(input);
-
-    const user = await this.usersService.findByEmail(parsed.email);
+    const user = await this.usersService.findByEmail(input.email);
     if (!user) {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    const ok = await bcrypt.compare(parsed.password, user.passwordHash);
+    const ok = await bcrypt.compare(input.password, user.passwordHash);
     if (!ok) {
       throw new UnauthorizedException('Invalid credentials');
     }
 
     return this.issueToken({ userId: user.id, email: user.email, role: user.role, agencyId: user.agencyId });
+  }
+
+  async getProfile(jwtUser: CurrentUserData): Promise<ProfileResponse> {
+    const dbUser = await this.prisma.user.findUnique({
+      where: { id: jwtUser.sub },
+      include: { agency: { select: { id: true, name: true } } }
+    });
+
+    return {
+      user: {
+        sub: jwtUser.sub,
+        email: jwtUser.email,
+        role: jwtUser.role,
+        agencyId: jwtUser.agencyId,
+        name: dbUser?.name ?? null,
+        phone: dbUser?.phone ?? null,
+        agency: dbUser?.agency ?? null
+      }
+    };
   }
 
   private async issueToken(input: { userId: string; email: string; role: UserRole; agencyId: string | null }): Promise<AuthTokenResponse> {
