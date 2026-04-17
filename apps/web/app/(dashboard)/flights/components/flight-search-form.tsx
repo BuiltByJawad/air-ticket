@@ -1,10 +1,11 @@
 'use client';
 
-import { Search, PlaneTakeoff, PlaneLanding, Users, ArrowRightLeft } from 'lucide-react';
+import { Search, Users, ArrowRightLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { FormField } from '@/components/shared/form-field';
 import { DatePicker } from '@/components/shared/date-picker';
+import { AirportAutocomplete } from '@/components/shared/airport-autocomplete';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useState, Suspense } from 'react';
 
@@ -28,8 +29,8 @@ function FlightSearchFormInner() {
 
   function validate(): boolean {
     const e: Record<string, string> = {};
-    if (!origin || origin.length !== 3) e.origin = 'Enter a 3-letter airport code (e.g. DAC)';
-    if (!destination || destination.length !== 3) e.destination = 'Enter a 3-letter airport code (e.g. DXB)';
+    if (!origin || origin.length !== 3) e.origin = 'Select a departure airport';
+    if (!destination || destination.length !== 3) e.destination = 'Select a destination airport';
     if (!departureDate) e.departureDate = 'Select a departure date';
     if (origin && destination && origin.toUpperCase() === destination.toUpperCase()) {
       e.destination = 'Origin and destination must differ';
@@ -54,20 +55,16 @@ function FlightSearchFormInner() {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-[1fr_auto_1fr]">
-        <FormField id="origin" label="From" required error={errors.origin}>
-          <div className="relative">
-            <PlaneTakeoff className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              id="origin"
-              name="origin"
-              placeholder="DAC"
-              value={origin}
-              onChange={(e) => { setOrigin(e.target.value.toUpperCase()); if (errors.origin) setErrors((p) => ({ ...p, origin: '' })); }}
-              maxLength={3}
-              className={`pl-9 uppercase ${errors.origin ? 'border-destructive' : ''}`}
-            />
-          </div>
-        </FormField>
+        <AirportAutocomplete
+          id="origin"
+          name="origin"
+          label="From"
+          icon="from"
+          value={origin}
+          onChange={(iata) => { setOrigin(iata); if (errors.origin) setErrors((p) => ({ ...p, origin: '' })); }}
+          error={errors.origin}
+          placeholder="Search city or airport"
+        />
 
         <div className="flex items-end pb-1.5 justify-center">
           <Button type="button" variant="ghost" size="icon" className="h-10 w-10 rounded-full" onClick={swapAirports}>
@@ -75,20 +72,16 @@ function FlightSearchFormInner() {
           </Button>
         </div>
 
-        <FormField id="destination" label="To" required error={errors.destination}>
-          <div className="relative">
-            <PlaneLanding className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              id="destination"
-              name="destination"
-              placeholder="DXB"
-              value={destination}
-              onChange={(e) => { setDestination(e.target.value.toUpperCase()); if (errors.destination) setErrors((p) => ({ ...p, destination: '' })); }}
-              maxLength={3}
-              className={`pl-9 uppercase ${errors.destination ? 'border-destructive' : ''}`}
-            />
-          </div>
-        </FormField>
+        <AirportAutocomplete
+          id="destination"
+          name="destination"
+          label="To"
+          icon="to"
+          value={destination}
+          onChange={(iata) => { setDestination(iata); if (errors.destination) setErrors((p) => ({ ...p, destination: '' })); }}
+          error={errors.destination}
+          placeholder="Search city or airport"
+        />
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_auto]">
