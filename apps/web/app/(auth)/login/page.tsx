@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { FormField } from '@/components/shared/form-field';
 import { loginAction } from './actions';
+import { CleanErrorParam } from './components/clean-error-param';
 
 export default async function LoginPage({
   searchParams
@@ -29,6 +30,7 @@ export default async function LoginPage({
 
   return (
     <div className="flex min-h-screen">
+      <CleanErrorParam />
       {/* Left: Branding panel (hidden on mobile) */}
       <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 text-white flex-col justify-between p-12">
         <div>
