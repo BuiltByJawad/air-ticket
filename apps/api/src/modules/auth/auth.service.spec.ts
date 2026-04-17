@@ -3,6 +3,7 @@ import { JwtService } from '@nestjs/jwt';
 import { UnauthorizedException } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { UsersService } from '../users/users.service';
+import { AgenciesService } from '../agencies/agencies.service';
 
 jest.mock('bcryptjs', () => ({
   ...jest.requireActual('bcryptjs'),
@@ -13,6 +14,7 @@ jest.mock('bcryptjs', () => ({
 describe('AuthService', () => {
   let service: AuthService;
   let usersService: Partial<Record<keyof UsersService, jest.Mock>>;
+  let agenciesService: Partial<Record<keyof AgenciesService, jest.Mock>>;
   let jwtService: Partial<Record<keyof JwtService, jest.Mock>>;
 
   const mockUser = {
@@ -29,6 +31,9 @@ describe('AuthService', () => {
       findByEmail: jest.fn(),
       create: jest.fn()
     };
+    agenciesService = {
+      create: jest.fn().mockResolvedValue({ id: 'agency-1', name: 'Test Agency', createdAt: new Date() })
+    };
     jwtService = {
       signAsync: jest.fn().mockResolvedValue('jwt-token')
     };
@@ -37,6 +42,7 @@ describe('AuthService', () => {
       providers: [
         AuthService,
         { provide: UsersService, useValue: usersService },
+        { provide: AgenciesService, useValue: agenciesService },
         { provide: JwtService, useValue: jwtService }
       ]
     }).compile();
@@ -48,7 +54,7 @@ describe('AuthService', () => {
     it('should register a new user and return token + user', async () => {
       usersService.create!.mockResolvedValue(mockUser);
 
-      const result = await service.register({ email: 'agent@test.com', password: 'password123' });
+      const result = await service.register({ email: 'agent@test.com', password: 'password123', agencyName: 'Test Agency' });
 
       expect(result.accessToken).toBe('jwt-token');
       expect(result.user.id).toBe('user-1');
@@ -61,11 +67,11 @@ describe('AuthService', () => {
     });
 
     it('should reject invalid email', async () => {
-      await expect(service.register({ email: 'bad', password: 'password123' })).rejects.toThrow();
+      await expect(service.register({ email: 'bad', password: 'password123', agencyName: 'Test Agency' })).rejects.toThrow();
     });
 
     it('should reject password shorter than 8 chars', async () => {
-      await expect(service.register({ email: 'a@b.com', password: 'short' })).rejects.toThrow();
+      await expect(service.register({ email: 'a@b.com', password: 'short', agencyName: 'Test Agency' })).rejects.toThrow();
     });
   });
 

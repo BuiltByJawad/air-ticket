@@ -9,6 +9,9 @@ import { AuditService } from '../audit/audit.service';
 interface RegisterBody {
   email: string;
   password: string;
+  name?: string;
+  phone?: string;
+  agencyName: string;
 }
 
 interface LoginBody {

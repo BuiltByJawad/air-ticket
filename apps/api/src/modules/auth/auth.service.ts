@@ -3,10 +3,14 @@ import * as bcrypt from 'bcryptjs';
 import { JwtService } from '@nestjs/jwt';
 import { z } from 'zod';
 import { UsersService, type UserRole } from '../users/users.service';
+import { AgenciesService } from '../agencies/agencies.service';
 
 const RegisterInputSchema = z.object({
   email: z.string().email(),
-  password: z.string().min(8)
+  password: z.string().min(8),
+  name: z.string().min(1).optional(),
+  phone: z.string().min(1).optional(),
+  agencyName: z.string().min(1)
 });
 
 const LoginInputSchema = z.object({
@@ -28,17 +32,23 @@ export interface AuthTokenResponse {
 export class AuthService {
   constructor(
     private readonly usersService: UsersService,
+    private readonly agenciesService: AgenciesService,
     private readonly jwtService: JwtService
   ) {}
 
-  async register(input: { email: string; password: string }): Promise<AuthTokenResponse> {
+  async register(input: { email: string; password: string; name?: string; phone?: string; agencyName: string }): Promise<AuthTokenResponse> {
     const parsed = RegisterInputSchema.parse(input);
+
+    const agency = await this.agenciesService.create({ name: parsed.agencyName });
 
     const passwordHash = await bcrypt.hash(parsed.password, 12);
     const user = await this.usersService.create({
       email: parsed.email,
       passwordHash,
-      role: 'agent'
+      role: 'agent',
+      name: parsed.name,
+      phone: parsed.phone,
+      agencyId: agency.id
     });
 
     return this.issueToken({ userId: user.id, email: user.email, role: user.role, agencyId: user.agencyId });

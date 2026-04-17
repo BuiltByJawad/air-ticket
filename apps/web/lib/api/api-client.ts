@@ -220,6 +220,9 @@ export interface RegisterResponse {
 export async function registerWithPassword(input: {
   email: string;
   password: string;
+  name?: string;
+  phone?: string;
+  agencyName: string;
 }): Promise<RegisterResponse> {
   const res = await apiFetch('/auth/register', {
     method: 'POST',

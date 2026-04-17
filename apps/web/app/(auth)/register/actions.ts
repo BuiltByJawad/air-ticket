@@ -12,6 +12,10 @@ export async function registerAction(formData: FormData): Promise<void> {
   const email = String(formData.get('email') ?? '').trim();
   const password = String(formData.get('password') ?? '');
   const confirmPassword = String(formData.get('confirmPassword') ?? '');
+  const name = String(formData.get('name') ?? '').trim();
+  const phone = String(formData.get('phone') ?? '').trim();
+  const agencyName = String(formData.get('agencyName') ?? '').trim();
+  const terms = formData.get('terms');
 
   if (!isValidEmail(email)) {
     redirect('/register?error=invalid_email');
@@ -25,8 +29,22 @@ export async function registerAction(formData: FormData): Promise<void> {
     redirect('/register?error=password_mismatch');
   }
 
+  if (!agencyName) {
+    redirect('/register?error=missing_agency');
+  }
+
+  if (!terms) {
+    redirect('/register?error=terms_required');
+  }
+
   try {
-    const result = await registerWithPassword({ email, password });
+    const result = await registerWithPassword({
+      email,
+      password,
+      name: name || undefined,
+      phone: phone || undefined,
+      agencyName
+    });
     await setSessionToken(result.accessToken);
   } catch (err: unknown) {
     if (err instanceof ApiError) {

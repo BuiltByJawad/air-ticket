@@ -1,4 +1,4 @@
-import { Plane, AlertCircle } from 'lucide-react';
+import { Plane, AlertCircle, Building2, User, Phone } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -23,15 +23,19 @@ export default async function RegisterPage({
           ? 'Passwords do not match.'
           : error === 'email_taken'
             ? 'An account with this email already exists.'
-            : error === 'api_config'
-              ? 'Web is missing API_BASE_URL. Set apps/web/.env API_BASE_URL=http://localhost:3001 and restart web.'
-              : error === 'api_unreachable'
-                ? 'API is unreachable. Ensure the Nest API is running on http://localhost:3001.'
-                : error === 'api_error'
-                  ? 'API returned an unexpected error.'
-                  : error === 'unknown'
-                    ? 'Unexpected error. Check server logs.'
-                  : null;
+            : error === 'missing_agency'
+              ? 'Agency name is required.'
+              : error === 'terms_required'
+                ? 'You must accept the terms of service.'
+                : error === 'api_config'
+                  ? 'Web is missing API_BASE_URL. Set apps/web/.env API_BASE_URL=http://localhost:3001 and restart web.'
+                  : error === 'api_unreachable'
+                    ? 'API is unreachable. Ensure the Nest API is running on http://localhost:3001.'
+                    : error === 'api_error'
+                      ? 'API returned an unexpected error.'
+                      : error === 'unknown'
+                        ? 'Unexpected error. Check server logs.'
+                      : null;
 
   return (
     <div className="flex min-h-svh">
@@ -62,8 +66,8 @@ export default async function RegisterPage({
             <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary lg:hidden">
               <Plane className="h-6 w-6 text-primary-foreground" />
             </div>
-            <CardTitle className="text-2xl">Create Account</CardTitle>
-            <CardDescription>Register your agency account</CardDescription>
+            <CardTitle className="text-2xl">Create Agency Account</CardTitle>
+            <CardDescription>Register your travel agency to get started</CardDescription>
           </CardHeader>
           <CardContent>
             {errorMessage && (
@@ -73,15 +77,64 @@ export default async function RegisterPage({
               </div>
             )}
             <form action={registerAction} className="space-y-4">
-              <FormField id="email" label="Email" required error={error === 'invalid_email' ? 'Enter a valid email address' : undefined}>
-                <Input id="email" name="email" type="email" placeholder="agent@agency.com" required className={error === 'invalid_email' ? 'border-destructive' : undefined} />
-              </FormField>
-              <FormField id="password" label="Password" required error={error === 'short_password' ? 'At least 8 characters' : undefined}>
-                <Input id="password" name="password" type="password" placeholder="Min. 8 characters" required className={error === 'short_password' ? 'border-destructive' : undefined} />
-              </FormField>
-              <FormField id="confirmPassword" label="Confirm Password" required error={error === 'password_mismatch' ? 'Passwords do not match' : undefined}>
-                <Input id="confirmPassword" name="confirmPassword" type="password" placeholder="Re-enter password" required className={error === 'password_mismatch' ? 'border-destructive' : undefined} />
-              </FormField>
+              {/* Agency section */}
+              <div className="rounded-lg border bg-muted/30 p-3 space-y-4">
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Agency Details</p>
+                <FormField id="agencyName" label="Agency Name" required error={error === 'missing_agency' ? 'Agency name is required' : undefined}>
+                  <div className="relative">
+                    <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input id="agencyName" name="agencyName" type="text" placeholder="Acme Travel Agency" required className="pl-9" />
+                  </div>
+                </FormField>
+              </div>
+
+              {/* Personal section */}
+              <div className="rounded-lg border bg-muted/30 p-3 space-y-4">
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Personal Details</p>
+                <FormField id="name" label="Full Name">
+                  <div className="relative">
+                    <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input id="name" name="name" type="text" placeholder="John Smith" className="pl-9" />
+                  </div>
+                </FormField>
+                <FormField id="email" label="Email" required error={error === 'invalid_email' ? 'Enter a valid email address' : undefined}>
+                  <Input id="email" name="email" type="email" placeholder="agent@agency.com" required className={error === 'invalid_email' ? 'border-destructive' : undefined} />
+                </FormField>
+                <FormField id="phone" label="Phone">
+                  <div className="relative">
+                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input id="phone" name="phone" type="tel" placeholder="+1 (555) 000-0000" className="pl-9" />
+                  </div>
+                </FormField>
+              </div>
+
+              {/* Security section */}
+              <div className="space-y-4">
+                <FormField id="password" label="Password" required error={error === 'short_password' ? 'At least 8 characters' : undefined}>
+                  <Input id="password" name="password" type="password" placeholder="Min. 8 characters" required className={error === 'short_password' ? 'border-destructive' : undefined} />
+                </FormField>
+                <FormField id="confirmPassword" label="Confirm Password" required error={error === 'password_mismatch' ? 'Passwords do not match' : undefined}>
+                  <Input id="confirmPassword" name="confirmPassword" type="password" placeholder="Re-enter password" required className={error === 'password_mismatch' ? 'border-destructive' : undefined} />
+                </FormField>
+              </div>
+
+              {/* Terms */}
+              <div className="flex items-start gap-2">
+                <input
+                  type="checkbox"
+                  id="terms"
+                  name="terms"
+                  value="accepted"
+                  required
+                  className="mt-1 h-4 w-4 rounded border-input accent-primary"
+                />
+                <label htmlFor="terms" className="text-sm text-muted-foreground leading-snug">
+                  I agree to the{' '}
+                  <span className="font-medium text-foreground">Terms of Service</span> and{' '}
+                  <span className="font-medium text-foreground">Privacy Policy</span>
+                </label>
+              </div>
+
               <Button type="submit" className="w-full h-11 text-base font-semibold">Create Account</Button>
             </form>
             <p className="mt-4 text-center text-sm text-muted-foreground">
