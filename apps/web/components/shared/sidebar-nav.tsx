@@ -8,20 +8,37 @@ import {
   BookOpen,
   LogOut,
   Menu,
-  X
+  X,
+  UserCircle,
+  Shield
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
 
-const navItems = [
+type NavUser = {
+  sub: string;
+  email: string;
+  role: 'agent' | 'admin';
+  agencyId?: string | null;
+  name?: string | null;
+  phone?: string | null;
+  agency?: { id: string; name: string } | null;
+};
+
+const baseNavItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/flights', label: 'Flights', icon: Plane },
-  { href: '/bookings', label: 'Bookings', icon: BookOpen }
+  { href: '/bookings', label: 'Bookings', icon: BookOpen },
+  { href: '/profile', label: 'Profile', icon: UserCircle }
 ];
 
-export function SidebarNav({ userEmail, userRole }: { userEmail: string; userRole: string }) {
+const adminNavItem = { href: '/admin', label: 'Admin', icon: Shield };
+
+export function SidebarNav({ user }: { user: NavUser }) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  const navItems = user.role === 'admin' ? [...baseNavItems, adminNavItem] : baseNavItems;
 
   return (
     <>
@@ -40,7 +57,7 @@ export function SidebarNav({ userEmail, userRole }: { userEmail: string; userRol
       {mobileOpen && (
         <div className="fixed inset-0 z-40 bg-black/50 lg:hidden" onClick={() => setMobileOpen(false)}>
           <nav className="flex h-full w-64 flex-col bg-card p-4" onClick={(e) => e.stopPropagation()}>
-            <NavContent pathname={pathname} userEmail={userEmail} userRole={userRole} onNav={() => setMobileOpen(false)} />
+            <NavContent pathname={pathname} user={user} onNav={() => setMobileOpen(false)} />
           </nav>
         </div>
       )}
@@ -48,7 +65,7 @@ export function SidebarNav({ userEmail, userRole }: { userEmail: string; userRol
       {/* Desktop sidebar */}
       <aside className="hidden lg:flex lg:w-64 lg:flex-col lg:border-r bg-card">
         <nav className="flex flex-1 flex-col p-4">
-          <NavContent pathname={pathname} userEmail={userEmail} userRole={userRole} />
+          <NavContent pathname={pathname} user={user} />
         </nav>
       </aside>
     </>
@@ -57,15 +74,16 @@ export function SidebarNav({ userEmail, userRole }: { userEmail: string; userRol
 
 function NavContent({
   pathname,
-  userEmail,
-  userRole,
+  user,
   onNav
 }: {
   pathname: string;
-  userEmail: string;
-  userRole: string;
+  user: NavUser;
   onNav?: () => void;
 }) {
+  const displayName = user.name || user.email;
+  const navItems = user.role === 'admin' ? [...baseNavItems, adminNavItem] : baseNavItems;
+
   return (
     <>
       <Link href="/dashboard" className="mb-8 flex items-center gap-2 font-bold text-xl text-primary" onClick={onNav}>
@@ -81,7 +99,7 @@ function NavContent({
             onClick={onNav}
             className={cn(
               'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
-              pathname === item.href
+              pathname === item.href || pathname.startsWith(item.href + '/')
                 ? 'bg-primary/10 text-primary'
                 : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
             )}
@@ -94,8 +112,11 @@ function NavContent({
 
       <div className="mt-auto border-t pt-4">
         <div className="px-3 py-2">
-          <p className="text-sm font-medium truncate">{userEmail}</p>
-          <p className="text-xs text-muted-foreground capitalize">{userRole}</p>
+          <p className="text-sm font-medium truncate">{displayName}</p>
+          <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+          {user.agency && (
+            <p className="text-xs text-muted-foreground truncate">{user.agency.name}</p>
+          )}
         </div>
         <form action="/logout" method="get">
           <button

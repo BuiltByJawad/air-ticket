@@ -18,7 +18,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   return (
     <div className="flex min-h-svh flex-col lg:flex-row">
-      <SidebarNav userEmail={me.user.email} userRole={me.user.role} />
+      <SidebarNav user={me.user} />
       <main className="min-w-0 flex-1 overflow-y-auto bg-background">
         <div className="container mx-auto max-w-6xl p-4 sm:p-6 lg:p-8">
           {children}

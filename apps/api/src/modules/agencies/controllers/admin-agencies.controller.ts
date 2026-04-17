@@ -1,4 +1,4 @@
-import { Body, Controller, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
 import type { Request } from 'express';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 import { Roles } from '../../auth/roles.decorator';
@@ -19,6 +19,11 @@ export class AdminAgenciesController {
     private readonly agenciesService: AgenciesService,
     private readonly auditService: AuditService
   ) {}
+
+  @Get()
+  async list() {
+    return this.agenciesService.listAll();
+  }
 
   @Post()
   async create(@Req() req: Request, @CurrentUser() user: CurrentUserData, @Body() body: CreateAgencyBody) {

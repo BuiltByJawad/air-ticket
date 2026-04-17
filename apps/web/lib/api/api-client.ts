@@ -10,6 +10,9 @@ export interface MeResponse {
     email: string;
     role: 'agent' | 'admin';
     agencyId?: string | null;
+    name?: string | null;
+    phone?: string | null;
+    agency?: { id: string; name: string } | null;
   };
 }
 
@@ -191,6 +194,38 @@ export async function getBooking(accessToken: string, id: string): Promise<Booki
   return data;
 }
 
+export async function confirmBooking(accessToken: string, id: string): Promise<Booking> {
+  const res = await apiFetch(`/bookings/${encodeURIComponent(id)}/confirm`, {
+    method: 'PATCH',
+    headers: {
+      Authorization: `Bearer ${accessToken}`
+    }
+  });
+
+  if (!res.ok) {
+    throw new ApiError('Failed to confirm booking', res.status);
+  }
+
+  const data: Booking = (await res.json()) as Booking;
+  return data;
+}
+
+export async function cancelBooking(accessToken: string, id: string): Promise<Booking> {
+  const res = await apiFetch(`/bookings/${encodeURIComponent(id)}/cancel`, {
+    method: 'PATCH',
+    headers: {
+      Authorization: `Bearer ${accessToken}`
+    }
+  });
+
+  if (!res.ok) {
+    throw new ApiError('Failed to cancel booking', res.status);
+  }
+
+  const data: Booking = (await res.json()) as Booking;
+  return data;
+}
+
 export async function listBookings(accessToken: string): Promise<Booking[]> {
   const res = await apiFetch('/bookings', {
     method: 'GET',
@@ -242,6 +277,49 @@ export interface AirportSuggestion {
   name: string;
   city: string;
   country: string;
+}
+
+export interface AdminAgency {
+  id: string;
+  name: string;
+  createdAt: string;
+}
+
+export interface AdminUser {
+  id: string;
+  email: string;
+  name: string | null;
+  phone: string | null;
+  role: 'agent' | 'admin';
+  agencyId: string | null;
+  createdAt: string;
+}
+
+export async function listAgencies(accessToken: string): Promise<AdminAgency[]> {
+  const res = await apiFetch('/admin/agencies', {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${accessToken}` }
+  });
+  if (!res.ok) throw new ApiError('Failed to list agencies', res.status);
+  return (await res.json()) as AdminAgency[];
+}
+
+export async function listUsers(accessToken: string): Promise<AdminUser[]> {
+  const res = await apiFetch('/admin/users', {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${accessToken}` }
+  });
+  if (!res.ok) throw new ApiError('Failed to list users', res.status);
+  return (await res.json()) as AdminUser[];
+}
+
+export async function listAllBookings(accessToken: string): Promise<Booking[]> {
+  const res = await apiFetch('/bookings', {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${accessToken}` }
+  });
+  if (!res.ok) throw new ApiError('Failed to list all bookings', res.status);
+  return (await res.json()) as Booking[];
 }
 
 export async function suggestAirports(accessToken: string, query: string): Promise<AirportSuggestion[]> {

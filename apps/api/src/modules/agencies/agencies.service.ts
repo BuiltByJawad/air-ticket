@@ -40,4 +40,11 @@ export class AgenciesService {
       createdAt: agency.createdAt
     };
   }
+
+  async listAll(): Promise<Agency[]> {
+    const rows = await this.prisma.agency.findMany({
+      orderBy: { createdAt: 'desc' }
+    });
+    return rows.map((a) => ({ id: a.id, name: a.name, createdAt: a.createdAt }));
+  }
 }

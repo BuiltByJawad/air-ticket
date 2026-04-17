@@ -122,6 +122,32 @@ export class BookingsService {
     return rows.map(toBooking);
   }
 
+  async confirmForAgent(user: CurrentUserData, id: string): Promise<Booking> {
+    const booking = await this.prisma.booking.findUnique({ where: { id } });
+    if (!booking) throw new NotFoundException('Booking not found');
+    if (user.role === 'agent' && (!user.agencyId || booking.agencyId !== user.agencyId)) {
+      throw new NotFoundException('Booking not found');
+    }
+    if (booking.status !== 'draft') {
+      throw new BadRequestException('Only draft bookings can be confirmed');
+    }
+    const updated = await this.prisma.booking.update({ where: { id }, data: { status: 'confirmed' } });
+    return toBooking(updated);
+  }
+
+  async cancelForAgent(user: CurrentUserData, id: string): Promise<Booking> {
+    const booking = await this.prisma.booking.findUnique({ where: { id } });
+    if (!booking) throw new NotFoundException('Booking not found');
+    if (user.role === 'agent' && (!user.agencyId || booking.agencyId !== user.agencyId)) {
+      throw new NotFoundException('Booking not found');
+    }
+    if (booking.status === 'cancelled') {
+      throw new BadRequestException('Booking is already cancelled');
+    }
+    const updated = await this.prisma.booking.update({ where: { id }, data: { status: 'cancelled' } });
+    return toBooking(updated);
+  }
+
   async getByIdForUser(user: CurrentUserData, id: string): Promise<Booking> {
     const booking = await this.prisma.booking.findUnique({
       where: { id }

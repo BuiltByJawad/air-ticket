@@ -1,4 +1,4 @@
-import { BadRequestException, Body, Controller, Post, Req, UseGuards } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
 import type { Request } from 'express';
 import * as bcrypt from 'bcryptjs';
 import { z } from 'zod';
@@ -27,6 +27,11 @@ export class AdminUsersController {
     private readonly agenciesService: AgenciesService,
     private readonly auditService: AuditService
   ) {}
+
+  @Get()
+  async list() {
+    return this.usersService.listAll();
+  }
 
   @Post('agents')
   async createAgent(@Req() req: Request, @CurrentUser() caller: CurrentUserData, @Body() body: CreateAgentBody) {

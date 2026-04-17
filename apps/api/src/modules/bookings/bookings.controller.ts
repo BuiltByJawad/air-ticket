@@ -1,4 +1,4 @@
-import { BadRequestException, Body, Controller, Get, Param, Post, Query, Req, UseGuards } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Get, Param, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
 import type { Request } from 'express';
 import { z } from 'zod';
 import { CurrentUser, type CurrentUserData } from '../auth/current-user.decorator';
@@ -63,5 +63,37 @@ export class BookingsController {
   @Roles('agent', 'admin')
   async getById(@CurrentUser() user: CurrentUserData, @Param('id') id: string) {
     return this.bookingsService.getByIdForUser(user, id);
+  }
+
+  @Patch(':id/confirm')
+  @Roles('agent')
+  async confirm(@Req() req: Request, @CurrentUser() user: CurrentUserData, @Param('id') id: string) {
+    const booking = await this.bookingsService.confirmForAgent(user, id);
+    await this.auditService.log({
+      action: 'booking.confirm',
+      resource: 'booking',
+      resourceId: booking.id,
+      agencyId: user.agencyId,
+      userId: user.sub,
+      requestId: req.requestId,
+      metadata: { offerId: booking.offerId }
+    });
+    return booking;
+  }
+
+  @Patch(':id/cancel')
+  @Roles('agent')
+  async cancel(@Req() req: Request, @CurrentUser() user: CurrentUserData, @Param('id') id: string) {
+    const booking = await this.bookingsService.cancelForAgent(user, id);
+    await this.auditService.log({
+      action: 'booking.cancel',
+      resource: 'booking',
+      resourceId: booking.id,
+      agencyId: user.agencyId,
+      userId: user.sub,
+      requestId: req.requestId,
+      metadata: { offerId: booking.offerId }
+    });
+    return booking;
   }
 }

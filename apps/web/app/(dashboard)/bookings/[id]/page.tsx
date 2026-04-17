@@ -1,10 +1,12 @@
-import { ArrowLeft, Calendar, Clock, DollarSign, Plane, Receipt, Users } from 'lucide-react';
+import { ArrowLeft, Calendar, CheckCircle2, Clock, DollarSign, Plane, Receipt, Users, XCircle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { getBooking } from '@/lib/api/api-client';
 import { getSessionToken } from '@/lib/auth/session';
 import { redirect, notFound } from 'next/navigation';
 import Link from 'next/link';
+import { confirmBookingAction, cancelBookingAction } from './actions';
 
 function fmtTime(iso: string) {
   return new Date(iso).toLocaleTimeString('en-US', {
@@ -200,6 +202,45 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
           </div>
         </CardContent>
       </Card>
+
+      {/* Actions */}
+      {booking.status === 'draft' && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Actions</CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col sm:flex-row gap-3">
+            <form action={confirmBookingAction}>
+              <input type="hidden" name="bookingId" value={id} />
+              <Button type="submit" className="gap-2">
+                <CheckCircle2 className="h-4 w-4" /> Confirm Booking
+              </Button>
+            </form>
+            <form action={cancelBookingAction}>
+              <input type="hidden" name="bookingId" value={id} />
+              <Button type="submit" variant="destructive" className="gap-2">
+                <XCircle className="h-4 w-4" /> Cancel Booking
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      )}
+
+      {booking.status === 'confirmed' && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Actions</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form action={cancelBookingAction}>
+              <input type="hidden" name="bookingId" value={id} />
+              <Button type="submit" variant="destructive" className="gap-2">
+                <XCircle className="h-4 w-4" /> Cancel Booking
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

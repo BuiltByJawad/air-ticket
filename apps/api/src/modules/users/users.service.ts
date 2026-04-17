@@ -39,6 +39,14 @@ export class UsersService {
     };
   }
 
+  async listAll(): Promise<Array<Omit<User, 'passwordHash'>>> {
+    const rows = await this.prisma.user.findMany({
+      orderBy: { createdAt: 'desc' },
+      select: { id: true, email: true, name: true, phone: true, role: true, createdAt: true, agencyId: true }
+    });
+    return rows;
+  }
+
   async create(input: { email: string; passwordHash: string; role: UserRole; name?: string | null; phone?: string | null; agencyId?: string | null }): Promise<User> {
     const email = input.email.toLowerCase();
 
