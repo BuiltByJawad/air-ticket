@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
-import { PlaneTakeoff, PlaneLanding, X } from 'lucide-react';
-import { searchAirports, type Airport } from '@/lib/data/airports';
+import { useState, useRef, useEffect, useCallback } from 'react';
+import { PlaneTakeoff, PlaneLanding, X, Loader2 } from 'lucide-react';
+import { suggestAirports, type AirportSuggestion } from '@/lib/api/api-client';
 import { cn } from '@/lib/utils';
 
 interface AirportAutocompleteProps {
@@ -14,6 +14,7 @@ interface AirportAutocompleteProps {
   onChange: (iata: string) => void;
   error?: string;
   placeholder?: string;
+  token: string;
 }
 
 export function AirportAutocomplete({
@@ -24,20 +25,23 @@ export function AirportAutocomplete({
   value,
   onChange,
   error,
-  placeholder = 'Search city or airport'
+  placeholder = 'Search city or airport',
+  token
 }: AirportAutocompleteProps) {
   const [query, setQuery] = useState('');
-  const [results, setResults] = useState<Airport[]>([]);
+  const [results, setResults] = useState<AirportSuggestion[]>([]);
   const [open, setOpen] = useState(false);
-  const [selected, setSelected] = useState<Airport | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [selected, setSelected] = useState<AirportSuggestion | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   // Sync external value → selected airport display
   useEffect(() => {
     if (value && (!selected || selected.iata !== value)) {
-      const found = searchAirports(value, 1)[0] ?? null;
-      setSelected(found);
-      setQuery(found ? `${found.city} (${found.iata})` : value);
+      // We only have the IATA code from URL; show it as-is until user searches
+      setSelected(null);
+      setQuery(value);
     } else if (!value) {
       setSelected(null);
       setQuery('');
@@ -55,24 +59,42 @@ export function AirportAutocomplete({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  function handleInputChange(text: string) {
-    setQuery(text);
-    if (text.length >= 1) {
-      const matches = searchAirports(text, 8);
-      setResults(matches);
-      setOpen(matches.length > 0);
-    } else {
+  const fetchSuggestions = useCallback(async (text: string) => {
+    if (!text || text.length < 1) {
       setResults([]);
       setOpen(false);
+      setLoading(false);
+      return;
     }
-    // Clear IATA if user clears/edits the text
+
+    setLoading(true);
+    try {
+      const matches = await suggestAirports(token, text);
+      setResults(matches);
+      setOpen(matches.length > 0);
+    } catch {
+      setResults([]);
+      setOpen(false);
+    } finally {
+      setLoading(false);
+    }
+  }, [token]);
+
+  function handleInputChange(text: string) {
+    setQuery(text);
+
+    // Clear IATA if user edits the text
     if (selected && !text.startsWith(selected.city)) {
       onChange('');
       setSelected(null);
     }
+
+    // Debounce API calls (300ms)
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => fetchSuggestions(text), 300);
   }
 
-  function selectAirport(airport: Airport) {
+  function selectAirport(airport: AirportSuggestion) {
     setSelected(airport);
     setQuery(`${airport.city} (${airport.iata})`);
     onChange(airport.iata);
@@ -113,7 +135,10 @@ export function AirportAutocomplete({
           )}
           autoComplete="off"
         />
-        {query && (
+        {loading && (
+          <Loader2 className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
+        )}
+        {!loading && query && (
           <button
             type="button"
             onClick={clearSelection}

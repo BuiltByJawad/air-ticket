@@ -137,6 +137,46 @@ export class DuffelProvider implements IFlightProvider {
     }
   }
 
+  async suggestAirports(query: string): Promise<DuffelAirportSuggestion[]> {
+    this.ensureToken();
+
+    try {
+      const res = await this.request<DuffelPlacesResponse>(
+        'GET',
+        `/places/suggestions?query=${encodeURIComponent(query)}`
+      );
+
+      const airports: DuffelAirportSuggestion[] = [];
+
+      for (const place of res.data ?? []) {
+        if (place.type === 'airport' && place.iata_code) {
+          airports.push({
+            iata: place.iata_code,
+            name: place.name,
+            city: place.city_name ?? place.city?.name ?? '',
+            country: place.iata_country_code
+          });
+        } else if (place.type === 'city' && place.airports?.length) {
+          for (const ap of place.airports) {
+            if (ap.iata_code) {
+              airports.push({
+                iata: ap.iata_code,
+                name: ap.name ?? place.name,
+                city: place.name,
+                country: ap.iata_country_code ?? place.iata_country_code
+              });
+            }
+          }
+        }
+      }
+
+      return airports;
+    } catch (error) {
+      this.logger.error(`Duffel places suggest failed: ${this.extractError(error)}`);
+      throw error;
+    }
+  }
+
   private extractError(error: unknown): string {
     if (error instanceof Error) {
       return error.message;
@@ -154,6 +194,27 @@ interface DuffelOfferRequestResponse {
 
 interface DuffelOfferResponse {
   data: DuffelOffer;
+}
+
+interface DuffelPlacesResponse {
+  data: DuffelPlace[];
+}
+
+interface DuffelPlace {
+  type: 'airport' | 'city';
+  name: string;
+  iata_code?: string;
+  iata_country_code: string;
+  city_name?: string;
+  city?: { name: string; iata_code: string; iata_country_code: string };
+  airports?: Array<{ name?: string; iata_code: string; iata_country_code?: string }>;
+}
+
+export interface DuffelAirportSuggestion {
+  iata: string;
+  name: string;
+  city: string;
+  country: string;
 }
 
 interface DuffelOffer {

@@ -1,4 +1,4 @@
-import { BadRequestException, Body, Controller, Post, UseGuards } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
 import { z } from 'zod';
 import { CurrentUser, type CurrentUserData } from '../auth/current-user.decorator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -21,6 +21,12 @@ const QuoteBodySchema = z.object({
 @UseGuards(JwtAuthGuard)
 export class FlightsController {
   constructor(private readonly flightsService: FlightsService) {}
+
+  @Get('airports')
+  async suggestAirports(@Query('q') query: string) {
+    if (!query || query.length < 1) return [];
+    return this.flightsService.suggestAirports(query);
+  }
 
   @Post('search')
   async search(@CurrentUser() user: CurrentUserData, @Body() body: unknown) {

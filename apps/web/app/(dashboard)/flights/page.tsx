@@ -90,7 +90,7 @@ export default async function FlightsPage({
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <FlightSearchForm />
+          <FlightSearchForm token={token} />
         </CardContent>
       </Card>
 

@@ -9,7 +9,7 @@ import { AirportAutocomplete } from '@/components/shared/airport-autocomplete';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useState, Suspense } from 'react';
 
-function FlightSearchFormInner() {
+function FlightSearchFormInner({ token }: { token: string }) {
   const router = useRouter();
   const params = useSearchParams();
 
@@ -64,6 +64,7 @@ function FlightSearchFormInner() {
           onChange={(iata) => { setOrigin(iata); if (errors.origin) setErrors((p) => ({ ...p, origin: '' })); }}
           error={errors.origin}
           placeholder="Search city or airport"
+          token={token}
         />
 
         <div className="flex items-end pb-1.5 justify-center">
@@ -81,6 +82,7 @@ function FlightSearchFormInner() {
           onChange={(iata) => { setDestination(iata); if (errors.destination) setErrors((p) => ({ ...p, destination: '' })); }}
           error={errors.destination}
           placeholder="Search city or airport"
+          token={token}
         />
       </div>
 
@@ -122,10 +124,10 @@ function FlightSearchFormInner() {
   );
 }
 
-export function FlightSearchForm() {
+export function FlightSearchForm({ token }: { token: string }) {
   return (
     <Suspense fallback={null}>
-      <FlightSearchFormInner />
+      <FlightSearchFormInner token={token} />
     </Suspense>
   );
 }

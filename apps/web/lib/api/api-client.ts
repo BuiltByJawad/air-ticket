@@ -190,3 +190,26 @@ export async function listBookings(accessToken: string): Promise<Booking[]> {
   const data: Booking[] = (await res.json()) as Booking[];
   return data;
 }
+
+export interface AirportSuggestion {
+  iata: string;
+  name: string;
+  city: string;
+  country: string;
+}
+
+export async function suggestAirports(accessToken: string, query: string): Promise<AirportSuggestion[]> {
+  const res = await apiFetch(`/flights/airports?q=${encodeURIComponent(query)}`, {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${accessToken}`
+    }
+  });
+
+  if (!res.ok) {
+    return [];
+  }
+
+  const data: AirportSuggestion[] = (await res.json()) as AirportSuggestion[];
+  return data;
+}
