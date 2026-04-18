@@ -1,5 +1,10 @@
 import { loadWebEnv } from '../config/env';
 
+interface ApiEnvelope<T> {
+  success: boolean;
+  data: T;
+}
+
 export interface AuthTokenResponse {
   accessToken: string;
 }
@@ -70,6 +75,20 @@ export class ApiError extends Error {
   }
 }
 
+async function parseApiResponse<T>(res: Response): Promise<T> {
+  const json: unknown = await res.json();
+  if (
+    typeof json === 'object' &&
+    json !== null &&
+    'success' in json &&
+    (json as { success?: unknown }).success === true &&
+    'data' in json
+  ) {
+    return (json as ApiEnvelope<T>).data;
+  }
+  return json as T;
+}
+
 async function apiFetch(path: string, init: RequestInit): Promise<Response> {
   const env = loadWebEnv();
   const url = new URL(path, env.API_BASE_URL);
@@ -101,8 +120,7 @@ export async function loginWithPassword(input: {
     throw new ApiError('Invalid credentials', res.status);
   }
 
-  const data: AuthTokenResponse = (await res.json()) as AuthTokenResponse;
-  return data;
+  return parseApiResponse<AuthTokenResponse>(res);
 }
 
 export async function fetchMe(accessToken: string): Promise<MeResponse> {
@@ -117,8 +135,7 @@ export async function fetchMe(accessToken: string): Promise<MeResponse> {
     throw new ApiError('Unauthorized', res.status);
   }
 
-  const data: MeResponse = (await res.json()) as MeResponse;
-  return data;
+  return parseApiResponse<MeResponse>(res);
 }
 
 export async function searchFlights(
@@ -137,8 +154,7 @@ export async function searchFlights(
     throw new ApiError('Failed to search flights', res.status);
   }
 
-  const data: FlightSearchResponse = (await res.json()) as FlightSearchResponse;
-  return data;
+  return parseApiResponse<FlightSearchResponse>(res);
 }
 
 export async function quoteFlight(accessToken: string, input: { offerId: string }): Promise<FlightQuoteResponse> {
@@ -154,8 +170,7 @@ export async function quoteFlight(accessToken: string, input: { offerId: string 
     throw new ApiError('Failed to quote flight', res.status);
   }
 
-  const data: FlightQuoteResponse = (await res.json()) as FlightQuoteResponse;
-  return data;
+  return parseApiResponse<FlightQuoteResponse>(res);
 }
 
 export async function createBooking(
@@ -174,8 +189,7 @@ export async function createBooking(
     throw new ApiError('Failed to create booking', res.status);
   }
 
-  const data: Booking = (await res.json()) as Booking;
-  return data;
+  return parseApiResponse<Booking>(res);
 }
 
 export async function getBooking(accessToken: string, id: string): Promise<Booking> {
@@ -190,8 +204,7 @@ export async function getBooking(accessToken: string, id: string): Promise<Booki
     throw new ApiError('Failed to get booking', res.status);
   }
 
-  const data: Booking = (await res.json()) as Booking;
-  return data;
+  return parseApiResponse<Booking>(res);
 }
 
 export async function confirmBooking(accessToken: string, id: string): Promise<Booking> {
@@ -206,8 +219,7 @@ export async function confirmBooking(accessToken: string, id: string): Promise<B
     throw new ApiError('Failed to confirm booking', res.status);
   }
 
-  const data: Booking = (await res.json()) as Booking;
-  return data;
+  return parseApiResponse<Booking>(res);
 }
 
 export async function cancelBooking(accessToken: string, id: string): Promise<Booking> {
@@ -222,8 +234,7 @@ export async function cancelBooking(accessToken: string, id: string): Promise<Bo
     throw new ApiError('Failed to cancel booking', res.status);
   }
 
-  const data: Booking = (await res.json()) as Booking;
-  return data;
+  return parseApiResponse<Booking>(res);
 }
 
 export async function listBookings(accessToken: string): Promise<Booking[]> {
@@ -238,8 +249,7 @@ export async function listBookings(accessToken: string): Promise<Booking[]> {
     throw new ApiError('Failed to list bookings', res.status);
   }
 
-  const data: Booking[] = (await res.json()) as Booking[];
-  return data;
+  return parseApiResponse<Booking[]>(res);
 }
 
 export interface RegisterResponse {
@@ -268,8 +278,7 @@ export async function registerWithPassword(input: {
     throw new ApiError('Registration failed', res.status);
   }
 
-  const data: RegisterResponse = (await res.json()) as RegisterResponse;
-  return data;
+  return parseApiResponse<RegisterResponse>(res);
 }
 
 export interface AirportSuggestion {
@@ -301,7 +310,7 @@ export async function listAgencies(accessToken: string): Promise<AdminAgency[]> 
     headers: { Authorization: `Bearer ${accessToken}` }
   });
   if (!res.ok) throw new ApiError('Failed to list agencies', res.status);
-  return (await res.json()) as AdminAgency[];
+  return parseApiResponse<AdminAgency[]>(res);
 }
 
 export async function listUsers(accessToken: string): Promise<AdminUser[]> {
@@ -310,7 +319,7 @@ export async function listUsers(accessToken: string): Promise<AdminUser[]> {
     headers: { Authorization: `Bearer ${accessToken}` }
   });
   if (!res.ok) throw new ApiError('Failed to list users', res.status);
-  return (await res.json()) as AdminUser[];
+  return parseApiResponse<AdminUser[]>(res);
 }
 
 export async function listAllBookings(accessToken: string): Promise<Booking[]> {
@@ -319,7 +328,7 @@ export async function listAllBookings(accessToken: string): Promise<Booking[]> {
     headers: { Authorization: `Bearer ${accessToken}` }
   });
   if (!res.ok) throw new ApiError('Failed to list all bookings', res.status);
-  return (await res.json()) as Booking[];
+  return parseApiResponse<Booking[]>(res);
 }
 
 export async function suggestAirports(accessToken: string, query: string): Promise<AirportSuggestion[]> {
@@ -334,6 +343,5 @@ export async function suggestAirports(accessToken: string, query: string): Promi
     return [];
   }
 
-  const data: AirportSuggestion[] = (await res.json()) as AirportSuggestion[];
-  return data;
+  return parseApiResponse<AirportSuggestion[]>(res);
 }
