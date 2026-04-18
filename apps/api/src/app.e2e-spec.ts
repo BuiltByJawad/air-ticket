@@ -1,11 +1,15 @@
 import type { INestApplication } from '@nestjs/common';
+import { ValidationPipe } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import supertest from 'supertest';
 const request = supertest;
 import { AppModule } from './modules/app/app.module';
 import { PrismaService } from './modules/prisma/prisma.service';
 import { GlobalExceptionFilter } from './modules/app/http-exception.filter';
+import { TransformInterceptor } from './modules/app/transform.interceptor';
 import { ThrottlerGuard } from '@nestjs/throttler';
+import { JwtAuthGuard } from './modules/auth/jwt-auth.guard';
+import { Reflector } from '@nestjs/core';
 
 /**
  * E2E tests require a running PostgreSQL database.
@@ -39,6 +43,9 @@ describeE2E('App E2E', () => {
     const { loadEnv } = await import('./config/env');
     const env = loadEnv();
     app.enableCors({ origin: env.CORS_ORIGIN, credentials: true });
+    app.useGlobalPipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }));
+    app.useGlobalGuards(new JwtAuthGuard(app.get(Reflector)));
+    app.useGlobalInterceptors(new TransformInterceptor());
     app.useGlobalFilters(new GlobalExceptionFilter());
 
     await app.init();
@@ -61,13 +68,14 @@ describeE2E('App E2E', () => {
     it('POST /auth/register — should register a new agent', async () => {
       const res = await request(app.getHttpServer())
         .post('/auth/register')
-        .send({ email: agentEmail, password })
+        .send({ email: agentEmail, password, agencyName: `e2e-agency-${Date.now()}` })
         .expect(201);
 
-      expect(res.body.accessToken).toBeDefined();
-      expect(res.body.user.email).toBe(agentEmail);
-      expect(res.body.user.role).toBe('agent');
-      agentToken = res.body.accessToken;
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.accessToken).toBeDefined();
+      expect(res.body.data.user.email).toBe(agentEmail);
+      expect(res.body.data.user.role).toBe('agent');
+      agentToken = res.body.data.accessToken;
     });
 
     it('POST /auth/register — should reject invalid email', async () => {
@@ -88,10 +96,11 @@ describeE2E('App E2E', () => {
       const res = await request(app.getHttpServer())
         .post('/auth/login')
         .send({ email: agentEmail, password })
-        .expect(201);
+        .expect(200);
 
-      expect(res.body.accessToken).toBeDefined();
-      expect(res.body.user.email).toBe(agentEmail);
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.accessToken).toBeDefined();
+      expect(res.body.data.user.email).toBe(agentEmail);
     });
 
     it('POST /auth/login — should reject wrong password', async () => {
@@ -107,7 +116,8 @@ describeE2E('App E2E', () => {
         .set('Authorization', `Bearer ${agentToken}`)
         .expect(200);
 
-      expect(res.body.user.email).toBe(agentEmail);
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.user.email).toBe(agentEmail);
     });
 
     it('GET /auth/me — should reject without token', async () => {
@@ -129,7 +139,7 @@ describeE2E('App E2E', () => {
         .post('/auth/login')
         .send({ email: adminEmail, password });
 
-      adminToken = res.body.accessToken;
+      adminToken = res.body.data.accessToken;
     });
 
     it('POST /admin/agencies — should create agency (admin only)', async () => {
@@ -139,9 +149,10 @@ describeE2E('App E2E', () => {
         .send({ name: `e2e-agency-${Date.now()}` })
         .expect(201);
 
-      expect(res.body.id).toBeDefined();
-      expect(res.body.name).toContain('e2e-agency');
-      agencyId = res.body.id;
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.id).toBeDefined();
+      expect(res.body.data.name).toContain('e2e-agency');
+      agencyId = res.body.data.id;
     });
 
     it('POST /admin/agencies — should reject agent', async () => {
@@ -160,9 +171,10 @@ describeE2E('App E2E', () => {
         .send({ email: newAgentEmail, password, agencyId })
         .expect(201);
 
-      expect(res.body.email).toBe(newAgentEmail);
-      expect(res.body.role).toBe('agent');
-      expect(res.body.agencyId).toBe(agencyId);
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.email).toBe(newAgentEmail);
+      expect(res.body.data.role).toBe('agent');
+      expect(res.body.data.agencyId).toBe(agencyId);
     });
 
     it('POST /admin/users/agents — should reject invalid agencyId', async () => {
@@ -185,7 +197,7 @@ describeE2E('App E2E', () => {
         .post('/auth/login')
         .send({ email: agentEmail, password });
 
-      const tokenWithAgency = loginRes.body.accessToken;
+      const tokenWithAgency = loginRes.body.data.accessToken;
 
       const res = await request(app.getHttpServer())
         .post('/bookings')
@@ -198,9 +210,10 @@ describeE2E('App E2E', () => {
         })
         .expect(201);
 
-      expect(res.body.id).toBeDefined();
-      expect(res.body.status).toBe('draft');
-      expect(res.body.totalPrice.currency).toBe('USD');
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.id).toBeDefined();
+      expect(res.body.data.status).toBe('draft');
+      expect(res.body.data.totalPrice.currency).toBe('USD');
     });
 
     it('GET /bookings — should list bookings for agent', async () => {
@@ -208,14 +221,15 @@ describeE2E('App E2E', () => {
         .post('/auth/login')
         .send({ email: agentEmail, password });
 
-      const tokenWithAgency = loginRes.body.accessToken;
+      const tokenWithAgency = loginRes.body.data.accessToken;
 
       const res = await request(app.getHttpServer())
         .get('/bookings')
         .set('Authorization', `Bearer ${tokenWithAgency}`)
         .expect(200);
 
-      expect(Array.isArray(res.body)).toBe(true);
+      expect(res.body.success).toBe(true);
+      expect(Array.isArray(res.body.data)).toBe(true);
     });
 
     it('GET /bookings — should reject unauthenticated', async () => {
