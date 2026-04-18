@@ -5,7 +5,6 @@ import { AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { FormField } from '@/components/shared/form-field';
-import { loginAction } from '../actions';
 
 interface LoginFormProps {
   serverError: string | null;
@@ -17,7 +16,6 @@ function isValidEmail(email: string): boolean {
 
 export function LoginForm({ serverError }: LoginFormProps) {
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [pending, setPending] = useState(false);
 
   function clearField(field: string) {
     if (errors[field]) {
@@ -29,8 +27,7 @@ export function LoginForm({ serverError }: LoginFormProps) {
     }
   }
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
+  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     const formData = new FormData(e.currentTarget);
     const email = String(formData.get('email') ?? '').trim();
     const password = String(formData.get('password') ?? '');
@@ -45,12 +42,13 @@ export function LoginForm({ serverError }: LoginFormProps) {
       fieldErrors.password = 'Password is required';
     }
 
-    setErrors(fieldErrors);
-    if (Object.keys(fieldErrors).length > 0) return;
+    if (Object.keys(fieldErrors).length > 0) {
+      e.preventDefault();
+      setErrors(fieldErrors);
+      return;
+    }
 
-    setPending(true);
-    await loginAction(formData);
-    setPending(false);
+    // Let form submit naturally so server action redirect works
   }
 
   return (
@@ -82,9 +80,7 @@ export function LoginForm({ serverError }: LoginFormProps) {
             className={errors.password ? 'border-destructive' : undefined}
           />
         </FormField>
-        <Button type="submit" className="w-full h-11 text-base font-semibold" disabled={pending}>
-          {pending ? 'Signing in...' : 'Sign in'}
-        </Button>
+        <Button type="submit" className="w-full h-11 text-base font-semibold">Sign in</Button>
       </form>
     </>
   );

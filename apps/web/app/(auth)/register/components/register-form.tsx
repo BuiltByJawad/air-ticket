@@ -5,7 +5,6 @@ import { AlertCircle, Building2, User, Phone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { FormField } from '@/components/shared/form-field';
-import { registerAction } from '../actions';
 
 interface RegisterFormProps {
   serverError: string | null;
@@ -17,7 +16,6 @@ function isValidEmail(email: string): boolean {
 
 export function RegisterForm({ serverError }: RegisterFormProps) {
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [pending, setPending] = useState(false);
 
   function clearField(field: string) {
     if (errors[field]) {
@@ -29,14 +27,11 @@ export function RegisterForm({ serverError }: RegisterFormProps) {
     }
   }
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
+  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     const formData = new FormData(e.currentTarget);
     const email = String(formData.get('email') ?? '').trim();
     const password = String(formData.get('password') ?? '');
     const confirmPassword = String(formData.get('confirmPassword') ?? '');
-    const name = String(formData.get('name') ?? '').trim();
-    const phone = String(formData.get('phone') ?? '').trim();
     const agencyName = String(formData.get('agencyName') ?? '').trim();
     const terms = formData.get('terms');
 
@@ -62,12 +57,13 @@ export function RegisterForm({ serverError }: RegisterFormProps) {
       fieldErrors.terms = 'You must accept the terms';
     }
 
-    setErrors(fieldErrors);
-    if (Object.keys(fieldErrors).length > 0) return;
+    if (Object.keys(fieldErrors).length > 0) {
+      e.preventDefault();
+      setErrors(fieldErrors);
+      return;
+    }
 
-    setPending(true);
-    await registerAction(formData);
-    setPending(false);
+    // Let form submit naturally so server action redirect works
   }
 
   return (
@@ -168,9 +164,7 @@ export function RegisterForm({ serverError }: RegisterFormProps) {
           {errors.terms && <p className="text-xs text-destructive mt-1 ml-6">{errors.terms}</p>}
         </div>
 
-        <Button type="submit" className="w-full h-11 text-base font-semibold" disabled={pending}>
-          {pending ? 'Creating Account...' : 'Create Account'}
-        </Button>
+        <Button type="submit" className="w-full h-11 text-base font-semibold">Create Account</Button>
       </form>
     </>
   );
