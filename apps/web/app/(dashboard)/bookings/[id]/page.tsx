@@ -2,7 +2,7 @@ import { ArrowLeft, Calendar, CheckCircle2, Clock, DollarSign, Plane, Receipt, U
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { getBooking } from '@/lib/api/api-client';
+import { ApiError, getBooking } from '@/lib/api/api-client';
 import { getSessionToken } from '@/lib/auth/session';
 import { redirect, notFound } from 'next/navigation';
 import Link from 'next/link';
@@ -54,7 +54,10 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
   let booking: Awaited<ReturnType<typeof getBooking>>;
   try {
     booking = await getBooking(token, id);
-  } catch {
+  } catch (err: unknown) {
+    if (err instanceof ApiError && err.status === 401) {
+      redirect('/login');
+    }
     notFound();
   }
 

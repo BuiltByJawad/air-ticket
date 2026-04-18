@@ -136,7 +136,7 @@ export async function loginWithPassword(input: {
   });
 
   if (!res.ok) {
-    throw new ApiError('Invalid credentials', res.status);
+    throw await toApiError(res, 'Invalid credentials');
   }
 
   return parseApiResponse<AuthTokenResponse>(res);
@@ -151,7 +151,7 @@ export async function fetchMe(accessToken: string): Promise<MeResponse> {
   });
 
   if (!res.ok) {
-    throw new ApiError('Unauthorized', res.status);
+    throw await toApiError(res, 'Unauthorized');
   }
 
   return parseApiResponse<MeResponse>(res);
@@ -170,7 +170,7 @@ export async function searchFlights(
   });
 
   if (!res.ok) {
-    throw new ApiError('Failed to search flights', res.status);
+    throw await toApiError(res, 'Failed to search flights');
   }
 
   return parseApiResponse<FlightSearchResponse>(res);
@@ -186,7 +186,7 @@ export async function quoteFlight(accessToken: string, input: { offerId: string 
   });
 
   if (!res.ok) {
-    throw new ApiError('Failed to quote flight', res.status);
+    throw await toApiError(res, 'Failed to quote flight');
   }
 
   return parseApiResponse<FlightQuoteResponse>(res);
@@ -205,7 +205,7 @@ export async function createBooking(
   });
 
   if (!res.ok) {
-    throw new ApiError('Failed to create booking', res.status);
+    throw await toApiError(res, 'Failed to create booking');
   }
 
   return parseApiResponse<Booking>(res);
@@ -220,7 +220,7 @@ export async function getBooking(accessToken: string, id: string): Promise<Booki
   });
 
   if (!res.ok) {
-    throw new ApiError('Failed to get booking', res.status);
+    throw await toApiError(res, 'Failed to get booking');
   }
 
   return parseApiResponse<Booking>(res);
@@ -235,7 +235,7 @@ export async function confirmBooking(accessToken: string, id: string): Promise<B
   });
 
   if (!res.ok) {
-    throw new ApiError('Failed to confirm booking', res.status);
+    throw await toApiError(res, 'Failed to confirm booking');
   }
 
   return parseApiResponse<Booking>(res);
@@ -250,7 +250,7 @@ export async function cancelBooking(accessToken: string, id: string): Promise<Bo
   });
 
   if (!res.ok) {
-    throw new ApiError('Failed to cancel booking', res.status);
+    throw await toApiError(res, 'Failed to cancel booking');
   }
 
   return parseApiResponse<Booking>(res);
@@ -294,7 +294,7 @@ export async function registerWithPassword(input: {
   });
 
   if (!res.ok) {
-    throw new ApiError('Registration failed', res.status);
+    throw await toApiError(res, 'Registration failed');
   }
 
   return parseApiResponse<RegisterResponse>(res);
@@ -328,7 +328,7 @@ export async function listAgencies(accessToken: string): Promise<AdminAgency[]> 
     method: 'GET',
     headers: { Authorization: `Bearer ${accessToken}` }
   });
-  if (!res.ok) throw new ApiError('Failed to list agencies', res.status);
+  if (!res.ok) throw await toApiError(res, 'Failed to list agencies');
   return parseApiResponse<AdminAgency[]>(res);
 }
 
@@ -337,7 +337,7 @@ export async function listUsers(accessToken: string): Promise<AdminUser[]> {
     method: 'GET',
     headers: { Authorization: `Bearer ${accessToken}` }
   });
-  if (!res.ok) throw new ApiError('Failed to list users', res.status);
+  if (!res.ok) throw await toApiError(res, 'Failed to list users');
   return parseApiResponse<AdminUser[]>(res);
 }
 
@@ -346,7 +346,7 @@ export async function listAllBookings(accessToken: string): Promise<Booking[]> {
     method: 'GET',
     headers: { Authorization: `Bearer ${accessToken}` }
   });
-  if (!res.ok) throw new ApiError('Failed to list all bookings', res.status);
+  if (!res.ok) throw await toApiError(res, 'Failed to list all bookings');
   return parseApiResponse<Booking[]>(res);
 }
 

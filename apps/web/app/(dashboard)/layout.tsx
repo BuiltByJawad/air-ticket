@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation';
-import { fetchMe } from '@/lib/api/api-client';
+import { ApiError, fetchMe } from '@/lib/api/api-client';
 import { getSessionToken } from '@/lib/auth/session';
 import { SidebarNav } from '@/components/shared/sidebar-nav';
 
@@ -12,8 +12,11 @@ export default async function DashboardLayout({ children }: { children: React.Re
   let me: Awaited<ReturnType<typeof fetchMe>>;
   try {
     me = await fetchMe(token);
-  } catch {
-    redirect('/login');
+  } catch (err: unknown) {
+    if (err instanceof ApiError && err.status === 401) {
+      redirect('/login');
+    }
+    throw err;
   }
 
   return (

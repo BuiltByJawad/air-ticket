@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation';
-import { fetchMe, listAgencies, listUsers, listBookings } from '@/lib/api/api-client';
+import { ApiError, fetchMe, listAgencies, listUsers, listBookings } from '@/lib/api/api-client';
 import { getSessionToken } from '@/lib/auth/session';
 import { Building2, Users, BookOpen } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,8 +13,11 @@ export default async function AdminPage() {
   let me: Awaited<ReturnType<typeof fetchMe>>;
   try {
     me = await fetchMe(token);
-  } catch {
-    redirect('/login');
+  } catch (err: unknown) {
+    if (err instanceof ApiError && err.status === 401) {
+      redirect('/login');
+    }
+    throw err;
   }
 
   if (me.user.role !== 'admin') {

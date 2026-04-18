@@ -1,7 +1,7 @@
 import { UserCircle, Mail, Phone, Building2, Shield } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { fetchMe } from '@/lib/api/api-client';
+import { ApiError, fetchMe } from '@/lib/api/api-client';
 import { getSessionToken } from '@/lib/auth/session';
 import { redirect } from 'next/navigation';
 
@@ -12,8 +12,11 @@ export default async function ProfilePage() {
   let me: Awaited<ReturnType<typeof fetchMe>>;
   try {
     me = await fetchMe(token);
-  } catch {
-    redirect('/login');
+  } catch (err: unknown) {
+    if (err instanceof ApiError && err.status === 401) {
+      redirect('/login');
+    }
+    throw err;
   }
 
   const u = me.user;
