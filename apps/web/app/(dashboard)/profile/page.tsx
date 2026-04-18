@@ -1,4 +1,4 @@
-import { UserCircle, Mail, Phone, Building2, Shield } from 'lucide-react';
+import { Building2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ApiError, fetchMe } from '@/lib/api/api-client';
@@ -31,9 +31,8 @@ export default async function ProfilePage() {
 
       <div className="grid gap-4 sm:grid-cols-2">
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardHeader className="space-y-0 pb-2">
             <CardTitle className="text-xs font-medium text-muted-foreground sm:text-sm">Full Name</CardTitle>
-            <UserCircle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-base font-medium">{u.name || 'Not set'}</div>
@@ -41,9 +40,8 @@ export default async function ProfilePage() {
         </Card>
 
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardHeader className="space-y-0 pb-2">
             <CardTitle className="text-xs font-medium text-muted-foreground sm:text-sm">Email</CardTitle>
-            <Mail className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-base font-medium truncate">{u.email}</div>
@@ -51,9 +49,8 @@ export default async function ProfilePage() {
         </Card>
 
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardHeader className="space-y-0 pb-2">
             <CardTitle className="text-xs font-medium text-muted-foreground sm:text-sm">Phone</CardTitle>
-            <Phone className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-base font-medium">{u.phone || 'Not set'}</div>
@@ -61,9 +58,8 @@ export default async function ProfilePage() {
         </Card>
 
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardHeader className="space-y-0 pb-2">
             <CardTitle className="text-xs font-medium text-muted-foreground sm:text-sm">Role</CardTitle>
-            <Shield className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <Badge variant={u.role === 'admin' ? 'default' : 'secondary'} className="capitalize">{u.role}</Badge>
