@@ -1,11 +1,17 @@
-import { Plane, AlertCircle } from 'lucide-react';
+import { Plane } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { FormField } from '@/components/shared/form-field';
-import { loginAction } from './actions';
+import { LoginForm } from './components/login-form';
 import { CleanErrorParam } from './components/clean-error-param';
 import Link from 'next/link';
+
+const ERROR_MESSAGES: Record<string, string> = {
+  invalid_credentials: 'Invalid email or password.',
+  invalid_input: 'Please enter a valid email and password.',
+  api_config: 'Web is missing API_BASE_URL. Set apps/web/.env API_BASE_URL=http://localhost:3001 and restart web.',
+  api_unreachable: 'API is unreachable. Ensure the Nest API is running on http://localhost:3001.',
+  api_error: 'API returned an unexpected error.',
+  unknown: 'Unexpected error. Check server logs.',
+};
 
 export default async function LoginPage({
   searchParams
@@ -13,21 +19,7 @@ export default async function LoginPage({
   searchParams?: Promise<{ error?: string }>;
 }) {
   const { error } = (await searchParams) ?? {};
-
-  const errorMessage =
-    error === 'invalid_credentials'
-      ? 'Invalid email or password.'
-    : error === 'invalid_input'
-        ? 'Please enter a valid email and password.'
-        : error === 'api_config'
-          ? 'Web is missing API_BASE_URL. Set apps/web/.env API_BASE_URL=http://localhost:3001 and restart web.'
-          : error === 'api_unreachable'
-            ? 'API is unreachable. Ensure the Nest API is running on http://localhost:3001.'
-            : error === 'api_error'
-              ? 'API returned an unexpected error.'
-              : error === 'unknown'
-                ? 'Unexpected error. Check server logs.'
-        : null;
+  const errorMessage = error ? ERROR_MESSAGES[error] ?? null : null;
 
   return (
     <div className="flex min-h-svh">
@@ -61,21 +53,7 @@ export default async function LoginPage({
             <CardDescription>B2B air ticketing platform for agencies</CardDescription>
           </CardHeader>
           <CardContent>
-            {errorMessage && (
-              <div className="mb-4 flex items-center gap-2 rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
-                <AlertCircle className="h-4 w-4 shrink-0" />
-                {errorMessage}
-              </div>
-            )}
-            <form action={loginAction} className="space-y-4">
-              <FormField id="email" label="Email" required error={error === 'invalid_input' ? 'Enter a valid email address' : undefined}>
-                <Input id="email" name="email" type="email" placeholder="agent@agency.com" required className={error === 'invalid_input' ? 'border-destructive' : undefined} />
-              </FormField>
-              <FormField id="password" label="Password" required error={error === 'invalid_input' ? 'Password is required' : undefined}>
-                <Input id="password" name="password" type="password" placeholder="Enter your password" required className={error === 'invalid_input' ? 'border-destructive' : undefined} />
-              </FormField>
-              <Button type="submit" className="w-full h-11 text-base font-semibold">Sign in</Button>
-            </form>
+            <LoginForm serverError={errorMessage} />
             <p className="mt-4 text-center text-sm text-muted-foreground">
               Don&apos;t have an account?{' '}
               <Link href="/register" className="font-medium text-primary hover:underline">
