@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import type { CurrentUserData } from '../auth/current-user.decorator';
 import type {
   FlightQuoteRequest,
@@ -52,7 +52,7 @@ export class FlightsService {
         return { offer };
       } catch (error) {
         this.logger.warn(`Duffel quote failed: ${String(error)}`);
-        throw new Error('Offer no longer available');
+        throw new BadRequestException('Offer no longer available');
       }
     }
 

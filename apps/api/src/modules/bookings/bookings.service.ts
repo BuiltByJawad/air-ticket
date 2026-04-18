@@ -4,32 +4,6 @@ import { PrismaService } from '../prisma/prisma.service';
 import type { CurrentUserData } from '../auth/current-user.decorator';
 import type { Booking, JsonValue } from './bookings.types';
 
-function isJsonPrimitive(value: unknown): value is string | number | boolean | null {
-  return (
-    value === null ||
-    typeof value === 'string' ||
-    typeof value === 'number' ||
-    typeof value === 'boolean'
-  );
-}
-
-function isJsonValue(value: unknown, depth = 0): value is JsonValue {
-  if (depth > 25) {
-    return false;
-  }
-  if (isJsonPrimitive(value)) {
-    return true;
-  }
-  if (Array.isArray(value)) {
-    return value.every((v) => isJsonValue(v, depth + 1));
-  }
-  if (typeof value === 'object') {
-    const record = value as Record<string, unknown>;
-    return Object.values(record).every((v) => isJsonValue(v, depth + 1));
-  }
-  return false;
-}
-
 function toBooking(dto: {
   id: string;
   status: 'draft' | 'confirmed' | 'cancelled';
@@ -71,18 +45,6 @@ export class BookingsService {
     }
     if (!user.agencyId) {
       throw new BadRequestException('User has no agency');
-    }
-
-    if (typeof input.offerData === 'undefined') {
-      throw new BadRequestException('Invalid offerData');
-    }
-
-    if (!isJsonValue(input.offerData)) {
-      throw new BadRequestException('Invalid offerData');
-    }
-
-    if (input.offerData === null) {
-      throw new BadRequestException('Invalid offerData');
     }
 
     const created = await this.prisma.booking.create({

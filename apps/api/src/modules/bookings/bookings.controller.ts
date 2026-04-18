@@ -1,5 +1,5 @@
 import { Body, Controller, Get, HttpCode, HttpStatus, Param, Patch, Post, Query, Req } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam } from '@nestjs/swagger';
 import type { Request } from 'express';
 import { CurrentUser, type CurrentUserData } from '../auth/current-user.decorator';
 import { Roles } from '../auth/roles.decorator';
@@ -48,6 +48,7 @@ export class BookingsController {
   @Roles('agent', 'admin')
   @ApiOperation({ summary: 'Get booking by ID' })
   @ApiResponse({ status: HttpStatus.OK, description: 'Booking retrieved' })
+  @ApiParam({ name: 'id', description: 'Booking ID' })
   async getById(@CurrentUser() user: CurrentUserData, @Param('id') id: string) {
     return this.bookingsService.getByIdForUser(user, id);
   }
@@ -56,6 +57,7 @@ export class BookingsController {
   @Roles('agent')
   @ApiOperation({ summary: 'Confirm a draft booking' })
   @ApiResponse({ status: HttpStatus.OK, description: 'Booking confirmed' })
+  @ApiParam({ name: 'id', description: 'Booking ID' })
   async confirm(@Req() req: Request, @CurrentUser() user: CurrentUserData, @Param('id') id: string) {
     const booking = await this.bookingsService.confirmForAgent(user, id);
     await this.auditService.log({
@@ -74,6 +76,7 @@ export class BookingsController {
   @Roles('agent')
   @ApiOperation({ summary: 'Cancel a booking' })
   @ApiResponse({ status: HttpStatus.OK, description: 'Booking cancelled' })
+  @ApiParam({ name: 'id', description: 'Booking ID' })
   async cancel(@Req() req: Request, @CurrentUser() user: CurrentUserData, @Param('id') id: string) {
     const booking = await this.bookingsService.cancelForAgent(user, id);
     await this.auditService.log({
