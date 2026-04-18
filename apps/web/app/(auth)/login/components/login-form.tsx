@@ -5,6 +5,7 @@ import { AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { FormField } from '@/components/shared/form-field';
+import { loginAction } from '../actions';
 
 interface LoginFormProps {
   serverError: string | null;
@@ -59,7 +60,7 @@ export function LoginForm({ serverError }: LoginFormProps) {
           {serverError}
         </div>
       )}
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form action={loginAction} onSubmit={handleSubmit} className="space-y-4">
         <FormField id="email" label="Email" required error={errors.email}>
           <Input
             id="email"

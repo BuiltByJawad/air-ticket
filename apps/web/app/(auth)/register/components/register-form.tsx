@@ -5,6 +5,7 @@ import { AlertCircle, Building2, User, Phone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { FormField } from '@/components/shared/form-field';
+import { registerAction } from '../actions';
 
 interface RegisterFormProps {
   serverError: string | null;
@@ -74,7 +75,7 @@ export function RegisterForm({ serverError }: RegisterFormProps) {
           {serverError}
         </div>
       )}
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form action={registerAction} onSubmit={handleSubmit} className="space-y-4">
         {/* Agency section */}
         <div className="rounded-lg border bg-muted/30 p-3 space-y-4">
           <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Agency Details</p>
