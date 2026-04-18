@@ -5,7 +5,6 @@ import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './modules/app/app.module';
 import { GlobalExceptionFilter } from './modules/app/http-exception.filter';
 import { TransformInterceptor } from './modules/app/transform.interceptor';
-import { JwtAuthGuard } from './modules/auth/jwt-auth.guard';
 import { loadEnv } from './config/env';
 
 async function bootstrap() {
@@ -26,8 +25,6 @@ async function bootstrap() {
     })
   );
 
-  const reflector = app.get(Reflector);
-  app.useGlobalGuards(new JwtAuthGuard(reflector));
   app.useGlobalInterceptors(new TransformInterceptor());
   app.useGlobalFilters(new GlobalExceptionFilter());
 

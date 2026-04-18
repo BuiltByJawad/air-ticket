@@ -10,6 +10,7 @@ import { BookingsModule } from '../bookings/bookings.module';
 import { AuditModule } from '../audit/audit.module';
 import { RequestIdMiddleware } from './request-id.middleware';
 import { LoggerMiddleware } from './logger.middleware';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 
 @Module({
@@ -25,6 +26,7 @@ import { RolesGuard } from '../auth/roles.guard';
   controllers: [HealthController],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },
+    { provide: APP_GUARD, useClass: JwtAuthGuard },
     { provide: APP_GUARD, useClass: RolesGuard }
   ]
 })
