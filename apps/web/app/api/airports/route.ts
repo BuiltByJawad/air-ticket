@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const results = await suggestAirports(token, query);
+    const results = await suggestAirports(query, token ?? undefined);
     return NextResponse.json(results);
   } catch {
     return NextResponse.json([], { status: 200 });

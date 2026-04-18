@@ -6,13 +6,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { FormField } from '@/components/shared/form-field';
 import { loginAction } from '../actions';
+import { isValidEmail } from '@/lib/validators/email';
 
 interface LoginFormProps {
   serverError: string | null;
-}
-
-function isValidEmail(email: string): boolean {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
 export function LoginForm({ serverError }: LoginFormProps) {

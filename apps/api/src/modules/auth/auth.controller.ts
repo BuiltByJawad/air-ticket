@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Post, Req } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, HttpStatus, Patch, Post, Req } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import type { Request } from 'express';
@@ -8,6 +8,7 @@ import { AuditService } from '../audit/audit.service';
 import { Public } from './public.decorator';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
 import { AuthTokenResponseDto } from './dto/auth-token.response';
 import { ProfileResponseDto } from './dto/profile.response';
 
@@ -64,5 +65,24 @@ export class AuthController {
   @ApiResponse({ status: HttpStatus.OK, description: 'Profile retrieved', type: ProfileResponseDto })
   async me(@CurrentUser() user: CurrentUserData) {
     return this.authService.getProfile(user);
+  }
+
+  @Patch('me')
+  @ApiBearerAuth()
+  @Throttle({ default: { ttl: 60_000, limit: 30 } })
+  @ApiOperation({ summary: 'Update current user profile' })
+  @ApiResponse({ status: HttpStatus.OK, description: 'Profile updated', type: ProfileResponseDto })
+  async updateMe(@Req() req: Request, @CurrentUser() user: CurrentUserData, @Body() body: UpdateProfileDto) {
+    const result = await this.authService.updateProfile(user, body);
+    await this.auditService.log({
+      action: 'auth.update_profile',
+      resource: 'user',
+      resourceId: user.sub,
+      userId: user.sub,
+      agencyId: user.agencyId,
+      requestId: req.requestId,
+      metadata: { fields: Object.keys(body) }
+    });
+    return result;
   }
 }

@@ -6,13 +6,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { FormField } from '@/components/shared/form-field';
 import { registerAction } from '../actions';
+import { isValidEmail } from '@/lib/validators/email';
 
 interface RegisterFormProps {
   serverError: string | null;
-}
-
-function isValidEmail(email: string): boolean {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
 export function RegisterForm({ serverError }: RegisterFormProps) {

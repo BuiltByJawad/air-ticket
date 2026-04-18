@@ -157,6 +157,22 @@ export async function fetchMe(accessToken: string): Promise<MeResponse> {
   return parseApiResponse<MeResponse>(res);
 }
 
+export async function updateProfile(accessToken: string, input: { name?: string; phone?: string; password?: string }): Promise<MeResponse> {
+  const res = await apiFetch('/auth/me', {
+    method: 'PATCH',
+    headers: {
+      Authorization: `Bearer ${accessToken}`
+    },
+    body: JSON.stringify(input)
+  });
+
+  if (!res.ok) {
+    throw await toApiError(res, 'Failed to update profile');
+  }
+
+  return parseApiResponse<MeResponse>(res);
+}
+
 export async function searchFlights(
   accessToken: string,
   input: { origin: string; destination: string; departureDate: string; adults: number; limit?: number; after?: string }
@@ -341,21 +357,10 @@ export async function listUsers(accessToken: string): Promise<AdminUser[]> {
   return parseApiResponse<AdminUser[]>(res);
 }
 
-export async function listAllBookings(accessToken: string): Promise<Booking[]> {
-  const res = await apiFetch('/bookings', {
-    method: 'GET',
-    headers: { Authorization: `Bearer ${accessToken}` }
-  });
-  if (!res.ok) throw await toApiError(res, 'Failed to list all bookings');
-  return parseApiResponse<Booking[]>(res);
-}
-
-export async function suggestAirports(accessToken: string, query: string): Promise<AirportSuggestion[]> {
+export async function suggestAirports(query: string, accessToken?: string): Promise<AirportSuggestion[]> {
   const res = await apiFetch(`/flights/airports?q=${encodeURIComponent(query)}`, {
     method: 'GET',
-    headers: {
-      Authorization: `Bearer ${accessToken}`
-    }
+    headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {}
   });
 
   if (!res.ok) {

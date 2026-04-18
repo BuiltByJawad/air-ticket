@@ -3,10 +3,7 @@
 import { redirect } from 'next/navigation';
 import { ApiError, registerWithPassword } from '../../../lib/api/api-client';
 import { setSessionToken } from '../../../lib/auth/session';
-
-function isValidEmail(email: string): boolean {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-}
+import { isValidEmail } from '../../../lib/validators/email';
 
 export async function registerAction(formData: FormData): Promise<void> {
   const email = String(formData.get('email') ?? '').trim();

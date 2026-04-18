@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { ApiError, fetchMe } from '@/lib/api/api-client';
 import { getSessionToken } from '@/lib/auth/session';
 import { redirect } from 'next/navigation';
+import { ProfileEditForm } from './components/profile-edit-form';
 
 export default async function ProfilePage() {
   const token = await getSessionToken();
@@ -92,6 +93,15 @@ export default async function ProfilePage() {
           </CardContent>
         </Card>
       )}
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Edit Profile</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ProfileEditForm initialName={u.name ?? null} initialPhone={u.phone ?? null} />
+        </CardContent>
+      </Card>
     </div>
   );
 }

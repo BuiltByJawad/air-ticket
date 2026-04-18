@@ -67,6 +67,19 @@ export class AuthService {
     return this.issueToken({ userId: user.id, email: user.email, role: user.role, agencyId: user.agencyId });
   }
 
+  async updateProfile(jwtUser: CurrentUserData, input: { name?: string; phone?: string; password?: string }): Promise<ProfileResponse> {
+    const data: { name?: string; phone?: string; passwordHash?: string } = {};
+    if (input.name !== undefined) data.name = input.name;
+    if (input.phone !== undefined) data.phone = input.phone;
+    if (input.password) data.passwordHash = await bcrypt.hash(input.password, 12);
+
+    if (Object.keys(data).length > 0) {
+      await this.prisma.user.update({ where: { id: jwtUser.sub }, data });
+    }
+
+    return this.getProfile(jwtUser);
+  }
+
   async getProfile(jwtUser: CurrentUserData): Promise<ProfileResponse> {
     const dbUser = await this.prisma.user.findUnique({
       where: { id: jwtUser.sub },
