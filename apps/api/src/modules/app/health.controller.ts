@@ -1,5 +1,6 @@
 import { Controller, Get } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { PrismaService } from '../prisma/prisma.service';
 import { Public } from '../auth/public.decorator';
 
@@ -10,6 +11,7 @@ export class HealthController {
 
   @Public()
   @Get()
+  @Throttle({ default: { ttl: 10_000, limit: 20 } })
   @ApiOperation({ summary: 'Health check' })
   @ApiResponse({ status: 200, description: 'Health status' })
   async getHealth() {

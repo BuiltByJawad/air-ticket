@@ -22,6 +22,7 @@ export class BookingsController {
   @Post()
   @HttpCode(HttpStatus.CREATED)
   @Roles('agent')
+  @Throttle({ default: { ttl: 60_000, limit: 30 } })
   @ApiOperation({ summary: 'Create a new booking' })
   @ApiResponse({ status: HttpStatus.CREATED, description: 'Booking created', type: BookingResponseDto })
   async create(@Req() req: Request, @CurrentUser() user: CurrentUserData, @Body() body: CreateBookingDto) {
@@ -40,6 +41,7 @@ export class BookingsController {
 
   @Get()
   @Roles('agent', 'admin')
+  @Throttle({ default: { ttl: 60_000, limit: 60 } })
   @ApiOperation({ summary: 'List bookings' })
   @ApiResponse({ status: HttpStatus.OK, description: 'Bookings listed', type: [BookingResponseDto] })
   async list(@CurrentUser() user: CurrentUserData, @Query() query: ListBookingsQueryDto) {
@@ -48,6 +50,7 @@ export class BookingsController {
 
   @Get(':id')
   @Roles('agent', 'admin')
+  @Throttle({ default: { ttl: 60_000, limit: 60 } })
   @ApiOperation({ summary: 'Get booking by ID' })
   @ApiResponse({ status: HttpStatus.OK, description: 'Booking retrieved', type: BookingResponseDto })
   @ApiParam({ name: 'id', description: 'Booking ID' })
@@ -57,6 +60,7 @@ export class BookingsController {
 
   @Patch(':id/confirm')
   @Roles('agent')
+  @Throttle({ default: { ttl: 60_000, limit: 30 } })
   @ApiOperation({ summary: 'Confirm a draft booking' })
   @ApiResponse({ status: HttpStatus.OK, description: 'Booking confirmed', type: BookingResponseDto })
   @ApiParam({ name: 'id', description: 'Booking ID' })
@@ -76,6 +80,7 @@ export class BookingsController {
 
   @Patch(':id/cancel')
   @Roles('agent')
+  @Throttle({ default: { ttl: 60_000, limit: 30 } })
   @ApiOperation({ summary: 'Cancel a booking' })
   @ApiResponse({ status: HttpStatus.OK, description: 'Booking cancelled', type: BookingResponseDto })
   @ApiParam({ name: 'id', description: 'Booking ID' })

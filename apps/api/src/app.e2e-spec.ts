@@ -8,8 +8,6 @@ import { PrismaService } from './modules/prisma/prisma.service';
 import { GlobalExceptionFilter } from './modules/app/http-exception.filter';
 import { TransformInterceptor } from './modules/app/transform.interceptor';
 import { ThrottlerGuard } from '@nestjs/throttler';
-import { JwtAuthGuard } from './modules/auth/jwt-auth.guard';
-import { Reflector } from '@nestjs/core';
 
 /**
  * E2E tests require a running PostgreSQL database.
@@ -44,7 +42,6 @@ describeE2E('App E2E', () => {
     const env = loadEnv();
     app.enableCors({ origin: env.CORS_ORIGIN, credentials: true });
     app.useGlobalPipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }));
-    app.useGlobalGuards(new JwtAuthGuard(app.get(Reflector)));
     app.useGlobalInterceptors(new TransformInterceptor());
     app.useGlobalFilters(new GlobalExceptionFilter());
 
@@ -256,6 +253,139 @@ describeE2E('App E2E', () => {
         .expect(401);
 
       expect(res.headers['x-request-id']).toBe(customId);
+    });
+  });
+
+  describe('Health endpoint', () => {
+    it('GET /health — should return status', async () => {
+      const res = await request(app.getHttpServer())
+        .get('/health')
+        .expect(200);
+
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.status).toBe('ok');
+      expect(res.body.data.db).toBe('ok');
+    });
+  });
+
+  describe('Booking confirm/cancel flow', () => {
+    let bookingId: string;
+
+    it('should create a booking to operate on', async () => {
+      const loginRes = await request(app.getHttpServer())
+        .post('/auth/login')
+        .send({ email: agentEmail, password });
+
+      const token = loginRes.body.data.accessToken;
+
+      const res = await request(app.getHttpServer())
+        .post('/bookings')
+        .set('Authorization', `Bearer ${token}`)
+        .send({
+          offerId: 'offer-e2e-confirm',
+          offerData: { test: true },
+          currency: 'USD',
+          amount: '300.00'
+        })
+        .expect(201);
+
+      bookingId = res.body.data.id;
+    });
+
+    it('PATCH /bookings/:id/confirm — should confirm a draft booking', async () => {
+      const loginRes = await request(app.getHttpServer())
+        .post('/auth/login')
+        .send({ email: agentEmail, password });
+
+      const token = loginRes.body.data.accessToken;
+
+      const res = await request(app.getHttpServer())
+        .patch(`/bookings/${bookingId}/confirm`)
+        .set('Authorization', `Bearer ${token}`)
+        .expect(200);
+
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.status).toBe('confirmed');
+    });
+
+    it('PATCH /bookings/:id/cancel — should cancel a confirmed booking', async () => {
+      const loginRes = await request(app.getHttpServer())
+        .post('/auth/login')
+        .send({ email: agentEmail, password });
+
+      const token = loginRes.body.data.accessToken;
+
+      const res = await request(app.getHttpServer())
+        .patch(`/bookings/${bookingId}/cancel`)
+        .set('Authorization', `Bearer ${token}`)
+        .expect(200);
+
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.status).toBe('cancelled');
+    });
+
+    it('PATCH /bookings/:id/confirm — should reject cancelling already cancelled', async () => {
+      const loginRes = await request(app.getHttpServer())
+        .post('/auth/login')
+        .send({ email: agentEmail, password });
+
+      const token = loginRes.body.data.accessToken;
+
+      await request(app.getHttpServer())
+        .patch(`/bookings/${bookingId}/cancel`)
+        .set('Authorization', `Bearer ${token}`)
+        .expect(400);
+    });
+  });
+
+  describe('Admin bookings access', () => {
+    it('GET /bookings — admin should list all bookings', async () => {
+      const res = await request(app.getHttpServer())
+        .get('/bookings')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .expect(200);
+
+      expect(res.body.success).toBe(true);
+      expect(Array.isArray(res.body.data)).toBe(true);
+    });
+
+    it('GET /bookings/:id — admin should get any booking', async () => {
+      const listRes = await request(app.getHttpServer())
+        .get('/bookings')
+        .set('Authorization', `Bearer ${adminToken}`);
+
+      const firstBooking = listRes.body.data[0];
+      if (!firstBooking) return;
+
+      const res = await request(app.getHttpServer())
+        .get(`/bookings/${firstBooking.id}`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .expect(200);
+
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.id).toBe(firstBooking.id);
+    });
+  });
+
+  describe('Admin user/agency listing', () => {
+    it('GET /admin/agencies — should list agencies', async () => {
+      const res = await request(app.getHttpServer())
+        .get('/admin/agencies')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .expect(200);
+
+      expect(res.body.success).toBe(true);
+      expect(Array.isArray(res.body.data)).toBe(true);
+    });
+
+    it('GET /admin/users — should list users', async () => {
+      const res = await request(app.getHttpServer())
+        .get('/admin/users')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .expect(200);
+
+      expect(res.body.success).toBe(true);
+      expect(Array.isArray(res.body.data)).toBe(true);
     });
   });
 

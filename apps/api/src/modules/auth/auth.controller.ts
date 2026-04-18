@@ -59,6 +59,7 @@ export class AuthController {
 
   @Get('me')
   @ApiBearerAuth()
+  @Throttle({ default: { ttl: 60_000, limit: 60 } })
   @ApiOperation({ summary: 'Get current user profile' })
   @ApiResponse({ status: HttpStatus.OK, description: 'Profile retrieved', type: ProfileResponseDto })
   async me(@CurrentUser() user: CurrentUserData) {
