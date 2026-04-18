@@ -8,6 +8,8 @@ import { AuditService } from '../audit/audit.service';
 import { Public } from './public.decorator';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
+import { AuthTokenResponseDto } from './dto/auth-token.response';
+import { ProfileResponseDto } from './dto/profile.response';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -22,7 +24,7 @@ export class AuthController {
   @HttpCode(HttpStatus.CREATED)
   @Throttle({ default: { ttl: 60_000, limit: 5 } })
   @ApiOperation({ summary: 'Register a new agency and agent user' })
-  @ApiResponse({ status: HttpStatus.CREATED, description: 'User registered' })
+  @ApiResponse({ status: HttpStatus.CREATED, description: 'User registered', type: AuthTokenResponseDto })
   async register(@Req() req: Request, @Body() body: RegisterDto) {
     const result = await this.authService.register(body);
     await this.auditService.log({
@@ -40,7 +42,7 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { ttl: 60_000, limit: 5 } })
   @ApiOperation({ summary: 'Login with email and password' })
-  @ApiResponse({ status: HttpStatus.OK, description: 'Login successful' })
+  @ApiResponse({ status: HttpStatus.OK, description: 'Login successful', type: AuthTokenResponseDto })
   async login(@Req() req: Request, @Body() body: LoginDto) {
     const result = await this.authService.login(body);
     await this.auditService.log({
@@ -58,7 +60,7 @@ export class AuthController {
   @Get('me')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get current user profile' })
-  @ApiResponse({ status: HttpStatus.OK, description: 'Profile retrieved' })
+  @ApiResponse({ status: HttpStatus.OK, description: 'Profile retrieved', type: ProfileResponseDto })
   async me(@CurrentUser() user: CurrentUserData) {
     return this.authService.getProfile(user);
   }

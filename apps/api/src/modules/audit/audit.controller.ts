@@ -1,9 +1,11 @@
 import { Controller, Get, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { IsString, IsOptional, IsInt, Min, Max, MinLength } from 'class-validator';
 import { Type } from 'class-transformer';
 import { Roles } from '../auth/roles.decorator';
 import { AuditService } from './audit.service';
+import { AuditLogListResponseDto } from './dto/audit-log.response';
 
 class ListAuditLogsQueryDto {
   @IsString()
@@ -45,7 +47,8 @@ export class AuditController {
 
   @Get()
   @ApiOperation({ summary: 'List audit logs' })
-  @ApiResponse({ status: 200, description: 'Audit logs listed' })
+  @ApiResponse({ status: 200, description: 'Audit logs listed', type: AuditLogListResponseDto })
+  @Throttle({ default: { ttl: 60_000, limit: 60 } })
   async list(@Query() query: ListAuditLogsQueryDto) {
     return this.auditService.listLogs(query);
   }

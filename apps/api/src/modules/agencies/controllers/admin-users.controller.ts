@@ -1,11 +1,13 @@
 import { Body, Controller, Get, HttpCode, HttpStatus, Post, Req } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import type { Request } from 'express';
 import { Roles } from '../../auth/roles.decorator';
 import { CurrentUser, type CurrentUserData } from '../../auth/current-user.decorator';
 import { UsersService } from '../../users/users.service';
 import { AuditService } from '../../audit/audit.service';
 import { CreateAgentDto } from '../dto/create-agent.dto';
+import { UserResponseDto } from '../dto/user.response';
 
 @ApiTags('Admin - Users')
 @ApiBearerAuth()
@@ -19,7 +21,8 @@ export class AdminUsersController {
 
   @Get()
   @ApiOperation({ summary: 'List all users' })
-  @ApiResponse({ status: HttpStatus.OK, description: 'Users listed' })
+  @ApiResponse({ status: HttpStatus.OK, description: 'Users listed', type: [UserResponseDto] })
+  @Throttle({ default: { ttl: 60_000, limit: 60 } })
   async list() {
     return this.usersService.listAll();
   }
@@ -27,7 +30,8 @@ export class AdminUsersController {
   @Post('agents')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Create a new agent user' })
-  @ApiResponse({ status: HttpStatus.CREATED, description: 'Agent created' })
+  @ApiResponse({ status: HttpStatus.CREATED, description: 'Agent created', type: UserResponseDto })
+  @Throttle({ default: { ttl: 60_000, limit: 30 } })
   async createAgent(@Req() req: Request, @CurrentUser() caller: CurrentUserData, @Body() body: CreateAgentDto) {
     const user = await this.usersService.createAgent(body);
 

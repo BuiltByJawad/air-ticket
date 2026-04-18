@@ -1,10 +1,12 @@
 import { Body, Controller, Get, HttpCode, HttpStatus, Post, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { CurrentUser, type CurrentUserData } from '../auth/current-user.decorator';
 import { FlightsService } from './flights.service';
 import { Public } from '../auth/public.decorator';
 import { SearchFlightDto } from './dto/search-flight.dto';
 import { QuoteFlightDto } from './dto/quote-flight.dto';
+import { FlightSearchResponseDto, FlightQuoteResponseDto, AirportSuggestionDto } from './dto/flight.response';
 
 @ApiTags('Flights')
 @Controller('flights')
@@ -14,7 +16,8 @@ export class FlightsController {
   @Public()
   @Get('airports')
   @ApiOperation({ summary: 'Suggest airports by query' })
-  @ApiResponse({ status: HttpStatus.OK, description: 'Airport suggestions' })
+  @ApiResponse({ status: HttpStatus.OK, description: 'Airport suggestions', type: [AirportSuggestionDto] })
+  @Throttle({ default: { ttl: 10_000, limit: 20 } })
   async suggestAirports(@Query('q') query: string) {
     if (!query || query.length < 1) return [];
     return this.flightsService.suggestAirports(query);
@@ -24,7 +27,8 @@ export class FlightsController {
   @HttpCode(HttpStatus.OK)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Search for flight offers' })
-  @ApiResponse({ status: HttpStatus.OK, description: 'Flight offers found' })
+  @ApiResponse({ status: HttpStatus.OK, description: 'Flight offers found', type: FlightSearchResponseDto })
+  @Throttle({ default: { ttl: 60_000, limit: 30 } })
   async search(@CurrentUser() user: CurrentUserData, @Body() body: SearchFlightDto) {
     return this.flightsService.search(user, body);
   }
@@ -33,7 +37,8 @@ export class FlightsController {
   @HttpCode(HttpStatus.OK)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get a quote for a specific offer' })
-  @ApiResponse({ status: HttpStatus.OK, description: 'Quote retrieved' })
+  @ApiResponse({ status: HttpStatus.OK, description: 'Quote retrieved', type: FlightQuoteResponseDto })
+  @Throttle({ default: { ttl: 60_000, limit: 30 } })
   async quote(@CurrentUser() user: CurrentUserData, @Body() body: QuoteFlightDto) {
     return this.flightsService.quote(user, body);
   }
