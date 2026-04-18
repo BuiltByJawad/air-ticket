@@ -75,6 +75,25 @@ export class ApiError extends Error {
   }
 }
 
+async function toApiError(res: Response, message: string): Promise<ApiError> {
+  let details: string | null = null;
+  try {
+    const body: unknown = await res.json();
+    if (typeof body === 'object' && body !== null) {
+      if ('message' in body && typeof (body as { message?: unknown }).message === 'string') {
+        details = (body as { message: string }).message;
+      } else {
+        details = JSON.stringify(body);
+      }
+    }
+  } catch {
+    // ignore
+  }
+
+  const fullMessage = details ? `${message}: ${details}` : message;
+  return new ApiError(fullMessage, res.status);
+}
+
 async function parseApiResponse<T>(res: Response): Promise<T> {
   const json: unknown = await res.json();
   if (
@@ -246,7 +265,7 @@ export async function listBookings(accessToken: string): Promise<Booking[]> {
   });
 
   if (!res.ok) {
-    throw new ApiError('Failed to list bookings', res.status);
+    throw await toApiError(res, 'Failed to list bookings');
   }
 
   return parseApiResponse<Booking[]>(res);
