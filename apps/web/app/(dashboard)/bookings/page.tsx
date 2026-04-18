@@ -1,7 +1,7 @@
 import { BookOpen, Calendar, DollarSign, PlaneTakeoff, Receipt } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { listBookings } from '@/lib/api/api-client';
+import { ApiError, listBookings } from '@/lib/api/api-client';
 import { getSessionToken } from '@/lib/auth/session';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
@@ -15,8 +15,11 @@ export default async function BookingsPage() {
   let bookings: Awaited<ReturnType<typeof listBookings>> = [];
   try {
     bookings = await listBookings(token);
-  } catch {
-    redirect('/login');
+  } catch (err: unknown) {
+    if (err instanceof ApiError && err.status === 401) {
+      redirect('/login');
+    }
+    throw err;
   }
 
   return (
