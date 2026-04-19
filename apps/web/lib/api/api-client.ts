@@ -58,12 +58,26 @@ export interface Booking {
   id: string;
   status: 'draft' | 'confirmed' | 'cancelled';
   offerId: string;
-  offerData: object;
-  totalPrice: MoneyAmount;
+  offerData: Record<string, unknown>;
+  totalPrice: {
+    currency: string;
+    amount: string;
+  };
   agencyId: string;
   createdByUserId: string;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface PaginationMeta {
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+export interface PaginatedResult<T> {
+  items: T[];
+  meta: PaginationMeta;
 }
 
 export class ApiError extends Error {
@@ -301,6 +315,37 @@ export async function listBookings(
   }
 
   return parseApiResponse<Booking[]>(res);
+}
+
+export async function listBookingsPaged(
+  accessToken: string,
+  input?: {
+    agencyId?: string;
+    status?: 'draft' | 'confirmed' | 'cancelled';
+    limit?: number;
+    offset?: number;
+  }
+): Promise<PaginatedResult<Booking>> {
+  const params = new URLSearchParams();
+  if (input?.agencyId) params.set('agencyId', input.agencyId);
+  if (input?.status) params.set('status', input.status);
+  if (input?.limit !== undefined) params.set('limit', String(input.limit));
+  if (input?.offset !== undefined) params.set('offset', String(input.offset));
+
+  const url = params.size > 0 ? `/bookings/paged?${params.toString()}` : '/bookings/paged';
+
+  const res = await apiFetch(url, {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${accessToken}`
+    }
+  });
+
+  if (!res.ok) {
+    throw await toApiError(res, 'Failed to list bookings');
+  }
+
+  return parseApiResponse<PaginatedResult<Booking>>(res);
 }
 
 export interface RegisterResponse {

@@ -9,6 +9,7 @@ import { AuditService } from '../audit/audit.service';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import { ListBookingsQueryDto } from './dto/list-bookings-query.dto';
 import { BookingResponseDto } from './dto/booking.response';
+import { PaginatedBookingsResponseDto } from './dto/paginated-bookings.response';
 
 @ApiTags('Bookings')
 @ApiBearerAuth()
@@ -46,6 +47,23 @@ export class BookingsController {
   @ApiResponse({ status: HttpStatus.OK, description: 'Bookings listed', type: [BookingResponseDto] })
   async list(@CurrentUser() user: CurrentUserData, @Query() query: ListBookingsQueryDto) {
     return this.bookingsService.listForUser(user, query);
+  }
+
+  @Get('paged')
+  @Roles('agent', 'admin')
+  @Throttle({ default: { ttl: 60_000, limit: 60 } })
+  @ApiOperation({ summary: 'List bookings (paged)' })
+  @ApiResponse({ status: HttpStatus.OK, description: 'Bookings listed', type: PaginatedBookingsResponseDto })
+  async listPaged(@CurrentUser() user: CurrentUserData, @Query() query: ListBookingsQueryDto) {
+    const limit = query.limit ?? 20;
+    const offset = query.offset ?? 0;
+
+    return this.bookingsService.listPagedForUser(user, {
+      agencyId: query.agencyId,
+      status: query.status,
+      limit,
+      offset
+    });
   }
 
   @Get(':id')

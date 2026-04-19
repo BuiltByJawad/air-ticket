@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import type { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import type { CurrentUserData } from '../auth/current-user.decorator';
+import type { PaginatedResult } from '../app/pagination.types';
 import type { Booking, JsonValue } from './bookings.types';
 
 function toBooking(dto: {
@@ -35,6 +36,65 @@ function toBooking(dto: {
 @Injectable()
 export class BookingsService {
   constructor(private readonly prisma: PrismaService) {}
+
+  async listPagedForUser(
+    user: CurrentUserData,
+    input: {
+      agencyId?: string;
+      status?: 'draft' | 'confirmed' | 'cancelled';
+      limit: number;
+      offset: number;
+    }
+  ): Promise<PaginatedResult<Booking>> {
+    const limit = input.limit;
+    const offset = input.offset;
+
+    if (user.role === 'agent') {
+      if (!user.agencyId) {
+        throw new BadRequestException('User has no agency');
+      }
+
+      const where: Prisma.BookingWhereInput = {
+        agencyId: user.agencyId,
+        ...(input.status ? { status: input.status } : {})
+      };
+
+      const [total, rows] = await Promise.all([
+        this.prisma.booking.count({ where }),
+        this.prisma.booking.findMany({
+          where,
+          orderBy: { createdAt: 'desc' },
+          skip: offset,
+          take: limit
+        })
+      ]);
+
+      return {
+        items: rows.map(toBooking),
+        meta: { total, limit, offset }
+      };
+    }
+
+    const where: Prisma.BookingWhereInput = {
+      ...(input.agencyId ? { agencyId: input.agencyId } : {}),
+      ...(input.status ? { status: input.status } : {})
+    };
+
+    const [total, rows] = await Promise.all([
+      this.prisma.booking.count({ where }),
+      this.prisma.booking.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip: offset,
+        take: limit
+      })
+    ]);
+
+    return {
+      items: rows.map(toBooking),
+      meta: { total, limit, offset }
+    };
+  }
 
   async createForAgent(
     user: CurrentUserData,

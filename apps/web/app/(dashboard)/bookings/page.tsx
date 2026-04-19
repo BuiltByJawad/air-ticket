@@ -1,10 +1,11 @@
 import { BookOpen, Calendar, DollarSign, PlaneTakeoff, Receipt } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ApiError, listBookings } from '@/lib/api/api-client';
+import { ApiError, listBookingsPaged } from '@/lib/api/api-client';
 import { getSessionToken } from '@/lib/auth/session';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
+import { PaginationControls } from '@/components/shared/pagination-controls';
 
 function parseStatus(value: string | undefined): 'draft' | 'confirmed' | 'cancelled' | undefined {
   if (value === 'draft' || value === 'confirmed' || value === 'cancelled') return value;
@@ -39,9 +40,9 @@ export default async function BookingsPage({
   const limit = parsePositiveInt(searchParams?.limit) ?? 20;
   const offset = parseNonNegativeInt(searchParams?.offset) ?? 0;
 
-  let bookings: Awaited<ReturnType<typeof listBookings>> = [];
+  let bookings: Awaited<ReturnType<typeof listBookingsPaged>> = { items: [], meta: { total: 0, limit, offset } };
   try {
-    bookings = await listBookings(token, { status, limit, offset });
+    bookings = await listBookingsPaged(token, { status, limit, offset });
   } catch (err: unknown) {
     if (err instanceof ApiError && err.status === 401) {
       redirect('/login');
@@ -52,17 +53,6 @@ export default async function BookingsPage({
   const baseParams = new URLSearchParams();
   baseParams.set('limit', String(limit));
   if (status) baseParams.set('status', status);
-  const prevOffset = Math.max(0, offset - limit);
-  const nextOffset = offset + limit;
-  const hasPrev = offset > 0;
-  const hasNext = bookings.length === limit;
-
-  const prevParams = new URLSearchParams(baseParams);
-  prevParams.set('offset', String(prevOffset));
-  const nextParams = new URLSearchParams(baseParams);
-  nextParams.set('offset', String(nextOffset));
-  const prevHref = `/bookings?${prevParams.toString()}`;
-  const nextHref = `/bookings?${nextParams.toString()}`;
 
   return (
     <div className="space-y-6">
@@ -106,32 +96,9 @@ export default async function BookingsPage({
             );
           })}
         </div>
-
-        <div className="flex items-center gap-2">
-          <Link
-            aria-disabled={!hasPrev}
-            tabIndex={hasPrev ? 0 : -1}
-            href={prevHref}
-            className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
-              hasPrev ? 'bg-muted text-muted-foreground hover:bg-accent' : 'pointer-events-none opacity-50 bg-muted text-muted-foreground'
-            }`}
-          >
-            Prev
-          </Link>
-          <Link
-            aria-disabled={!hasNext}
-            tabIndex={hasNext ? 0 : -1}
-            href={nextHref}
-            className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
-              hasNext ? 'bg-muted text-muted-foreground hover:bg-accent' : 'pointer-events-none opacity-50 bg-muted text-muted-foreground'
-            }`}
-          >
-            Next
-          </Link>
-        </div>
       </div>
 
-      {bookings.length === 0 ? (
+      {bookings.items.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <BookOpen className="h-12 w-12 text-muted-foreground mb-4" />
@@ -141,7 +108,7 @@ export default async function BookingsPage({
         </Card>
       ) : (
         <div className="grid gap-4">
-          {bookings.map((b) => (
+          {bookings.items.map((b) => (
             <Link key={b.id} href={`/bookings/${b.id}`}>
               <Card className="hover:shadow-md transition-shadow">
                 <CardContent className="p-4 sm:p-6">
@@ -174,6 +141,12 @@ export default async function BookingsPage({
           ))}
         </div>
       )}
+
+      <PaginationControls
+        basePath="/bookings"
+        meta={bookings.meta}
+        params={{ status: status ?? undefined }}
+      />
     </div>
   );
 }
