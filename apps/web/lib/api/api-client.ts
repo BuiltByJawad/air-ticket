@@ -272,8 +272,24 @@ export async function cancelBooking(accessToken: string, id: string): Promise<Bo
   return parseApiResponse<Booking>(res);
 }
 
-export async function listBookings(accessToken: string): Promise<Booking[]> {
-  const res = await apiFetch('/bookings', {
+export async function listBookings(
+  accessToken: string,
+  input?: {
+    agencyId?: string;
+    status?: 'draft' | 'confirmed' | 'cancelled';
+    limit?: number;
+    offset?: number;
+  }
+): Promise<Booking[]> {
+  const params = new URLSearchParams();
+  if (input?.agencyId) params.set('agencyId', input.agencyId);
+  if (input?.status) params.set('status', input.status);
+  if (input?.limit !== undefined) params.set('limit', String(input.limit));
+  if (input?.offset !== undefined) params.set('offset', String(input.offset));
+
+  const url = params.size > 0 ? `/bookings?${params.toString()}` : '/bookings';
+
+  const res = await apiFetch(url, {
     method: 'GET',
     headers: {
       Authorization: `Bearer ${accessToken}`

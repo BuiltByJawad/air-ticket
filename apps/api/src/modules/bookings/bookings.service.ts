@@ -65,23 +65,45 @@ export class BookingsService {
     return toBooking(created);
   }
 
-  async listForUser(user: CurrentUserData, input: { agencyId?: string }): Promise<Booking[]> {
+  async listForUser(
+    user: CurrentUserData,
+    input: {
+      agencyId?: string;
+      status?: 'draft' | 'confirmed' | 'cancelled';
+      limit?: number;
+      offset?: number;
+    }
+  ): Promise<Booking[]> {
     if (user.role === 'agent') {
       if (!user.agencyId) {
         throw new BadRequestException('User has no agency');
       }
 
+      const where: Prisma.BookingWhereInput = {
+        agencyId: user.agencyId,
+        ...(input.status ? { status: input.status } : {})
+      };
+
       const rows = await this.prisma.booking.findMany({
-        where: { agencyId: user.agencyId },
-        orderBy: { createdAt: 'desc' }
+        where,
+        orderBy: { createdAt: 'desc' },
+        ...(input.offset !== undefined ? { skip: input.offset } : {}),
+        ...(input.limit !== undefined ? { take: input.limit } : {})
       });
 
       return rows.map(toBooking);
     }
 
+    const where: Prisma.BookingWhereInput = {
+      ...(input.agencyId ? { agencyId: input.agencyId } : {}),
+      ...(input.status ? { status: input.status } : {})
+    };
+
     const rows = await this.prisma.booking.findMany({
-      where: input.agencyId ? { agencyId: input.agencyId } : {},
-      orderBy: { createdAt: 'desc' }
+      where,
+      orderBy: { createdAt: 'desc' },
+      ...(input.offset !== undefined ? { skip: input.offset } : {}),
+      ...(input.limit !== undefined ? { take: input.limit } : {})
     });
 
     return rows.map(toBooking);

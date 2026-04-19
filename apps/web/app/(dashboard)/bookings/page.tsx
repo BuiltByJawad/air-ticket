@@ -6,21 +6,63 @@ import { getSessionToken } from '@/lib/auth/session';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 
-export default async function BookingsPage() {
+function parseStatus(value: string | undefined): 'draft' | 'confirmed' | 'cancelled' | undefined {
+  if (value === 'draft' || value === 'confirmed' || value === 'cancelled') return value;
+  return undefined;
+}
+
+function parseNonNegativeInt(value: string | undefined): number | undefined {
+  if (!value) return undefined;
+  const n = Number.parseInt(value, 10);
+  if (!Number.isFinite(n) || Number.isNaN(n) || n < 0) return undefined;
+  return n;
+}
+
+function parsePositiveInt(value: string | undefined): number | undefined {
+  if (!value) return undefined;
+  const n = Number.parseInt(value, 10);
+  if (!Number.isFinite(n) || Number.isNaN(n) || n <= 0) return undefined;
+  return n;
+}
+
+export default async function BookingsPage({
+  searchParams
+}: {
+  searchParams?: { status?: string; limit?: string; offset?: string };
+}) {
   const token = await getSessionToken();
   if (!token) {
     redirect('/login');
   }
 
+  const status = parseStatus(searchParams?.status);
+  const limit = parsePositiveInt(searchParams?.limit) ?? 20;
+  const offset = parseNonNegativeInt(searchParams?.offset) ?? 0;
+
   let bookings: Awaited<ReturnType<typeof listBookings>> = [];
   try {
-    bookings = await listBookings(token);
+    bookings = await listBookings(token, { status, limit, offset });
   } catch (err: unknown) {
     if (err instanceof ApiError && err.status === 401) {
       redirect('/login');
     }
     throw err;
   }
+
+  const baseParams = new URLSearchParams();
+  baseParams.set('limit', String(limit));
+  if (status) baseParams.set('status', status);
+  const prevOffset = Math.max(0, offset - limit);
+  const nextOffset = offset + limit;
+  const hasPrev = offset > 0;
+  const hasNext = bookings.length === limit;
+
+  const prevParams = new URLSearchParams(baseParams);
+  prevParams.set('offset', String(prevOffset));
+  const nextParams = new URLSearchParams(baseParams);
+  nextParams.set('offset', String(nextOffset));
+  const prevHref = `/bookings?${prevParams.toString()}`;
+  const nextHref = `/bookings?${nextParams.toString()}`;
 
   return (
     <div className="space-y-6">
@@ -35,6 +77,58 @@ export default async function BookingsPage() {
         >
           <PlaneTakeoff className="h-4 w-4" /> New Search
         </Link>
+      </div>
+
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-muted-foreground">Status:</span>
+          <Link
+            href={`/bookings?${new URLSearchParams({ limit: String(limit) }).toString()}`}
+            className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+              !status ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-accent'
+            }`}
+          >
+            All
+          </Link>
+          {(['draft', 'confirmed', 'cancelled'] as const).map((s) => {
+            const p = new URLSearchParams(baseParams);
+            p.set('status', s);
+            return (
+              <Link
+                key={s}
+                href={`/bookings?${p.toString()}`}
+                className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                  status === s ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-accent'
+                }`}
+              >
+                {s}
+              </Link>
+            );
+          })}
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Link
+            aria-disabled={!hasPrev}
+            tabIndex={hasPrev ? 0 : -1}
+            href={prevHref}
+            className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+              hasPrev ? 'bg-muted text-muted-foreground hover:bg-accent' : 'pointer-events-none opacity-50 bg-muted text-muted-foreground'
+            }`}
+          >
+            Prev
+          </Link>
+          <Link
+            aria-disabled={!hasNext}
+            tabIndex={hasNext ? 0 : -1}
+            href={nextHref}
+            className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+              hasNext ? 'bg-muted text-muted-foreground hover:bg-accent' : 'pointer-events-none opacity-50 bg-muted text-muted-foreground'
+            }`}
+          >
+            Next
+          </Link>
+        </div>
       </div>
 
       {bookings.length === 0 ? (
