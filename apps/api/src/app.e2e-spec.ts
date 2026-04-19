@@ -122,6 +122,43 @@ describeE2E('App E2E', () => {
         .get('/auth/me')
         .expect(401);
     });
+
+    it('PATCH /auth/me — should update name', async () => {
+      const res = await request(app.getHttpServer())
+        .patch('/auth/me')
+        .set('Authorization', `Bearer ${agentToken}`)
+        .send({ name: 'Updated Name' })
+        .expect(200);
+
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.user.name).toBe('Updated Name');
+    });
+
+    it('PATCH /auth/me — should update phone', async () => {
+      const res = await request(app.getHttpServer())
+        .patch('/auth/me')
+        .set('Authorization', `Bearer ${agentToken}`)
+        .send({ phone: '+8801712345678' })
+        .expect(200);
+
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.user.phone).toBe('+8801712345678');
+    });
+
+    it('PATCH /auth/me — should reject without token', async () => {
+      await request(app.getHttpServer())
+        .patch('/auth/me')
+        .send({ name: 'Hacker' })
+        .expect(401);
+    });
+
+    it('PATCH /auth/me — should reject short password', async () => {
+      await request(app.getHttpServer())
+        .patch('/auth/me')
+        .set('Authorization', `Bearer ${agentToken}`)
+        .send({ password: 'short' })
+        .expect(400);
+    });
   });
 
   describe('Admin flow', () => {

@@ -16,19 +16,24 @@ export async function updateProfileAction(formData: FormData): Promise<ProfileAc
 
   const name = String(formData.get('name') ?? '').trim();
   const phone = String(formData.get('phone') ?? '').trim();
+  const currentPassword = String(formData.get('currentPassword') ?? '');
   const password = String(formData.get('password') ?? '');
   const confirmPassword = String(formData.get('confirmPassword') ?? '');
 
-  const input: { name?: string; phone?: string; password?: string } = {};
+  const input: { name?: string; phone?: string; currentPassword?: string; password?: string } = {};
   if (name) input.name = name;
   if (phone) input.phone = phone;
   if (password) {
+    if (!currentPassword) {
+      return { success: false, error: 'Current password is required to set a new password' };
+    }
     if (password.length < 8) {
       return { success: false, error: 'Password must be at least 8 characters' };
     }
     if (password !== confirmPassword) {
       return { success: false, error: 'Passwords do not match' };
     }
+    input.currentPassword = currentPassword;
     input.password = password;
   }
 

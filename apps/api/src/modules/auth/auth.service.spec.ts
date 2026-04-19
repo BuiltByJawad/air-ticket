@@ -17,7 +17,7 @@ describe('AuthService', () => {
   let usersService: Partial<Record<keyof UsersService, jest.Mock>>;
   let agenciesService: Partial<Record<keyof AgenciesService, jest.Mock>>;
   let jwtService: Partial<Record<keyof JwtService, jest.Mock>>;
-  let prismaService: { user: { findUnique: jest.Mock } };
+  let prismaService: { user: { findUnique: jest.Mock; update: jest.Mock } };
 
   const mockUser = {
     id: 'user-1',
@@ -41,7 +41,8 @@ describe('AuthService', () => {
     };
     prismaService = {
       user: {
-        findUnique: jest.fn()
+        findUnique: jest.fn(),
+        update: jest.fn()
       }
     };
 
@@ -145,6 +146,115 @@ describe('AuthService', () => {
       });
 
       expect(result.user.agency).toBeNull();
+    });
+  });
+
+  describe('updateProfile', () => {
+    const jwtUser = {
+      sub: 'user-1',
+      email: 'agent@test.com',
+      role: 'agent' as const,
+      agencyId: 'agency-1'
+    };
+
+    it('should update name and return updated profile', async () => {
+      prismaService.user.update.mockResolvedValue({ ...mockUser, name: 'New Name' });
+      prismaService.user.findUnique.mockResolvedValue({
+        ...mockUser,
+        name: 'New Name',
+        agency: { id: 'agency-1', name: 'Test Agency' }
+      });
+
+      const result = await service.updateProfile(jwtUser, { name: 'New Name' });
+
+      expect(prismaService.user.update).toHaveBeenCalledWith({
+        where: { id: 'user-1' },
+        data: { name: 'New Name' }
+      });
+      expect(result.user.name).toBe('New Name');
+    });
+
+    it('should update phone and return updated profile', async () => {
+      prismaService.user.update.mockResolvedValue({ ...mockUser, phone: '+123' });
+      prismaService.user.findUnique.mockResolvedValue({
+        ...mockUser,
+        phone: '+123',
+        agency: { id: 'agency-1', name: 'Test Agency' }
+      });
+
+      const result = await service.updateProfile(jwtUser, { phone: '+123' });
+
+      expect(prismaService.user.update).toHaveBeenCalledWith({
+        where: { id: 'user-1' },
+        data: { phone: '+123' }
+      });
+      expect(result.user.phone).toBe('+123');
+    });
+
+    it('should hash and update password when currentPassword is correct', async () => {
+      prismaService.user.findUnique.mockResolvedValueOnce(mockUser);
+      prismaService.user.update.mockResolvedValue(mockUser);
+      prismaService.user.findUnique.mockResolvedValueOnce({
+        ...mockUser,
+        agency: { id: 'agency-1', name: 'Test Agency' }
+      });
+
+      const bcryptjs = jest.requireMock('bcryptjs');
+      bcryptjs.compare.mockResolvedValue(true);
+
+      await service.updateProfile(jwtUser, { currentPassword: 'oldPass', password: 'newPassword123' });
+
+      expect(bcryptjs.compare).toHaveBeenCalledWith('oldPass', '$2a$12$hash');
+      expect(bcryptjs.hash).toHaveBeenCalledWith('newPassword123', 12);
+      expect(prismaService.user.update).toHaveBeenCalledWith({
+        where: { id: 'user-1' },
+        data: { passwordHash: '$2a$12$hashed' }
+      });
+    });
+
+    it('should reject password change without currentPassword', async () => {
+      await expect(
+        service.updateProfile(jwtUser, { password: 'newPassword123' })
+      ).rejects.toThrow(UnauthorizedException);
+    });
+
+    it('should reject password change with incorrect currentPassword', async () => {
+      prismaService.user.findUnique.mockResolvedValueOnce(mockUser);
+
+      const bcryptjs = jest.requireMock('bcryptjs');
+      bcryptjs.compare.mockResolvedValue(false);
+
+      await expect(
+        service.updateProfile(jwtUser, { currentPassword: 'wrongPass', password: 'newPassword123' })
+      ).rejects.toThrow(UnauthorizedException);
+    });
+
+    it('should update multiple fields at once', async () => {
+      prismaService.user.update.mockResolvedValue(mockUser);
+      prismaService.user.findUnique.mockResolvedValue({
+        ...mockUser,
+        name: 'Updated',
+        phone: '+999',
+        agency: { id: 'agency-1', name: 'Test Agency' }
+      });
+
+      await service.updateProfile(jwtUser, { name: 'Updated', phone: '+999' });
+
+      expect(prismaService.user.update).toHaveBeenCalledWith({
+        where: { id: 'user-1' },
+        data: { name: 'Updated', phone: '+999' }
+      });
+    });
+
+    it('should not call update when no fields provided', async () => {
+      prismaService.user.findUnique.mockResolvedValue({
+        ...mockUser,
+        agency: { id: 'agency-1', name: 'Test Agency' }
+      });
+
+      await service.updateProfile(jwtUser, {});
+
+      expect(prismaService.user.update).not.toHaveBeenCalled();
     });
   });
 });

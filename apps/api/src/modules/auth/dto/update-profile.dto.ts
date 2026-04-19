@@ -12,6 +12,11 @@ export class UpdateProfileDto {
   @IsOptional()
   phone?: string;
 
+  @ApiPropertyOptional({ example: 'currentSecurePass' })
+  @IsString()
+  @IsOptional()
+  currentPassword?: string;
+
   @ApiPropertyOptional({ example: 'newSecurePass123' })
   @IsString()
   @MinLength(8)

@@ -46,6 +46,9 @@ export class BookingsService {
     if (!user.agencyId) {
       throw new BadRequestException('User has no agency');
     }
+    if (input.offerData === null || input.offerData === undefined) {
+      throw new BadRequestException('offerData is required');
+    }
 
     const created = await this.prisma.booking.create({
       data: {

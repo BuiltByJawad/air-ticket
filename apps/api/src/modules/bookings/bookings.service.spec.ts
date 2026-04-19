@@ -11,6 +11,7 @@ describe('BookingsService', () => {
       create: jest.Mock;
       findMany: jest.Mock;
       findUnique: jest.Mock;
+      update: jest.Mock;
     };
   };
 
@@ -46,7 +47,8 @@ describe('BookingsService', () => {
       booking: {
         create: jest.fn(),
         findMany: jest.fn(),
-        findUnique: jest.fn()
+        findUnique: jest.fn(),
+        update: jest.fn()
       }
     };
 
@@ -177,6 +179,90 @@ describe('BookingsService', () => {
       const result = await service.getByIdForUser(adminUser, 'booking-1');
 
       expect(result.id).toBe('booking-1');
+    });
+  });
+
+  describe('confirmForAgent', () => {
+    it('should confirm a draft booking for agent in same agency', async () => {
+      prisma.booking.findUnique.mockResolvedValue(mockBookingRow);
+      prisma.booking.update.mockResolvedValue({ ...mockBookingRow, status: 'confirmed' });
+
+      const result = await service.confirmForAgent(agentUser, 'booking-1');
+
+      expect(result.status).toBe('confirmed');
+      expect(prisma.booking.update).toHaveBeenCalledWith({
+        where: { id: 'booking-1' },
+        data: { status: 'confirmed' }
+      });
+    });
+
+    it('should confirm a draft booking for admin', async () => {
+      prisma.booking.findUnique.mockResolvedValue(mockBookingRow);
+      prisma.booking.update.mockResolvedValue({ ...mockBookingRow, status: 'confirmed' });
+
+      const result = await service.confirmForAgent(adminUser, 'booking-1');
+
+      expect(result.status).toBe('confirmed');
+    });
+
+    it('should throw NotFoundException for missing booking', async () => {
+      prisma.booking.findUnique.mockResolvedValue(null);
+
+      await expect(service.confirmForAgent(agentUser, 'nonexistent')).rejects.toThrow(NotFoundException);
+    });
+
+    it('should throw NotFoundException when agent accesses other agency booking', async () => {
+      prisma.booking.findUnique.mockResolvedValue({ ...mockBookingRow, agencyId: 'other-agency' });
+
+      await expect(service.confirmForAgent(agentUser, 'booking-1')).rejects.toThrow(NotFoundException);
+    });
+
+    it('should throw BadRequestException when confirming non-draft booking', async () => {
+      prisma.booking.findUnique.mockResolvedValue({ ...mockBookingRow, status: 'confirmed' });
+
+      await expect(service.confirmForAgent(agentUser, 'booking-1')).rejects.toThrow(BadRequestException);
+    });
+  });
+
+  describe('cancelForAgent', () => {
+    it('should cancel a confirmed booking for agent in same agency', async () => {
+      prisma.booking.findUnique.mockResolvedValue({ ...mockBookingRow, status: 'confirmed' });
+      prisma.booking.update.mockResolvedValue({ ...mockBookingRow, status: 'cancelled' });
+
+      const result = await service.cancelForAgent(agentUser, 'booking-1');
+
+      expect(result.status).toBe('cancelled');
+      expect(prisma.booking.update).toHaveBeenCalledWith({
+        where: { id: 'booking-1' },
+        data: { status: 'cancelled' }
+      });
+    });
+
+    it('should cancel a draft booking', async () => {
+      prisma.booking.findUnique.mockResolvedValue(mockBookingRow);
+      prisma.booking.update.mockResolvedValue({ ...mockBookingRow, status: 'cancelled' });
+
+      const result = await service.cancelForAgent(agentUser, 'booking-1');
+
+      expect(result.status).toBe('cancelled');
+    });
+
+    it('should throw NotFoundException for missing booking', async () => {
+      prisma.booking.findUnique.mockResolvedValue(null);
+
+      await expect(service.cancelForAgent(agentUser, 'nonexistent')).rejects.toThrow(NotFoundException);
+    });
+
+    it('should throw BadRequestException when cancelling already cancelled booking', async () => {
+      prisma.booking.findUnique.mockResolvedValue({ ...mockBookingRow, status: 'cancelled' });
+
+      await expect(service.cancelForAgent(agentUser, 'booking-1')).rejects.toThrow(BadRequestException);
+    });
+
+    it('should throw NotFoundException when agent accesses other agency booking', async () => {
+      prisma.booking.findUnique.mockResolvedValue({ ...mockBookingRow, agencyId: 'other-agency' });
+
+      await expect(service.cancelForAgent(agentUser, 'booking-1')).rejects.toThrow(NotFoundException);
     });
   });
 });

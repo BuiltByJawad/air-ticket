@@ -15,6 +15,7 @@ interface ProfileEditFormProps {
 export function ProfileEditForm({ initialName, initialPhone }: ProfileEditFormProps) {
   const [name, setName] = useState(initialName ?? '');
   const [phone, setPhone] = useState(initialPhone ?? '');
+  const [currentPassword, setCurrentPassword] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -35,6 +36,9 @@ export function ProfileEditForm({ initialName, initialPhone }: ProfileEditFormPr
     const e: Record<string, string> = {};
 
     if (password) {
+      if (!currentPassword) {
+        e.currentPassword = 'Current password is required to set a new password';
+      }
       if (password.length < 8) {
         e.password = 'Password must be at least 8 characters';
       }
@@ -62,6 +66,7 @@ export function ProfileEditForm({ initialName, initialPhone }: ProfileEditFormPr
     setPending(false);
 
     if (actionResult.success) {
+      setCurrentPassword('');
       setPassword('');
       setConfirmPassword('');
     }
@@ -107,6 +112,17 @@ export function ProfileEditForm({ initialName, initialPhone }: ProfileEditFormPr
 
         <div className="rounded-lg border bg-muted/30 p-3 space-y-4">
           <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Change Password</p>
+          <FormField id="currentPassword" label="Current Password" error={errors.currentPassword}>
+            <Input
+              id="currentPassword"
+              name="currentPassword"
+              type="password"
+              placeholder="Enter current password"
+              value={currentPassword}
+              onChange={(e) => { setCurrentPassword(e.target.value); clearField('currentPassword'); }}
+              className={errors.currentPassword ? 'border-destructive' : undefined}
+            />
+          </FormField>
           <FormField id="password" label="New Password" error={errors.password}>
             <Input
               id="password"

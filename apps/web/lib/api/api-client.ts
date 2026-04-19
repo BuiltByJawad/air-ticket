@@ -157,7 +157,7 @@ export async function fetchMe(accessToken: string): Promise<MeResponse> {
   return parseApiResponse<MeResponse>(res);
 }
 
-export async function updateProfile(accessToken: string, input: { name?: string; phone?: string; password?: string }): Promise<MeResponse> {
+export async function updateProfile(accessToken: string, input: { name?: string; phone?: string; currentPassword?: string; password?: string }): Promise<MeResponse> {
   const res = await apiFetch('/auth/me', {
     method: 'PATCH',
     headers: {
