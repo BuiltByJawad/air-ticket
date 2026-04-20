@@ -2,6 +2,7 @@ import { ConflictException, Injectable, NotFoundException } from '@nestjs/common
 import * as bcrypt from 'bcryptjs';
 import { PrismaService } from '../prisma/prisma.service';
 import { AgenciesService } from '../agencies/agencies.service';
+import type { PaginatedResult } from '../app/pagination.types';
 
 export type UserRole = 'agent' | 'admin';
 
@@ -60,6 +61,23 @@ export class UsersService {
       select: { id: true, email: true, name: true, phone: true, role: true, createdAt: true, agencyId: true }
     });
     return rows;
+  }
+
+  async listAllPaged(input: { limit: number; offset: number }): Promise<PaginatedResult<UserPublic>> {
+    const [total, rows] = await Promise.all([
+      this.prisma.user.count(),
+      this.prisma.user.findMany({
+        orderBy: { createdAt: 'desc' },
+        select: { id: true, email: true, name: true, phone: true, role: true, createdAt: true, agencyId: true },
+        skip: input.offset,
+        take: input.limit
+      })
+    ]);
+
+    return {
+      items: rows,
+      meta: { total, limit: input.limit, offset: input.offset }
+    };
   }
 
   async create(input: { email: string; passwordHash: string; role: UserRole; name?: string | null; phone?: string | null; agencyId?: string | null }): Promise<User> {

@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Post, Req } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, HttpStatus, Post, Query, Req } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import type { Request } from 'express';
@@ -8,6 +8,7 @@ import { UsersService } from '../../users/users.service';
 import { AuditService } from '../../audit/audit.service';
 import { CreateAgentDto } from '../dto/create-agent.dto';
 import { UserResponseDto } from '../dto/user.response';
+import { PagedQueryDto } from '../../app/dto/paged-query.dto';
 
 @ApiTags('Admin - Users')
 @ApiBearerAuth()
@@ -25,6 +26,16 @@ export class AdminUsersController {
   @Throttle({ default: { ttl: 60_000, limit: 60 } })
   async list() {
     return this.usersService.listAll();
+  }
+
+  @Get('paged')
+  @ApiOperation({ summary: 'List users (paged)' })
+  @ApiResponse({ status: HttpStatus.OK, description: 'Users listed (paged)' })
+  @Throttle({ default: { ttl: 60_000, limit: 60 } })
+  async listPaged(@Query() query: PagedQueryDto) {
+    const limit = query.limit ?? 20;
+    const offset = query.offset ?? 0;
+    return this.usersService.listAllPaged({ limit, offset });
   }
 
   @Post('agents')

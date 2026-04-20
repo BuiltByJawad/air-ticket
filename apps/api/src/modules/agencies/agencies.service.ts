@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import type { PaginatedResult } from '../app/pagination.types';
 
 export interface Agency {
   id: string;
@@ -46,5 +47,21 @@ export class AgenciesService {
       orderBy: { createdAt: 'desc' }
     });
     return rows.map((a) => ({ id: a.id, name: a.name, createdAt: a.createdAt }));
+  }
+
+  async listAllPaged(input: { limit: number; offset: number }): Promise<PaginatedResult<Agency>> {
+    const [total, rows] = await Promise.all([
+      this.prisma.agency.count(),
+      this.prisma.agency.findMany({
+        orderBy: { createdAt: 'desc' },
+        skip: input.offset,
+        take: input.limit
+      })
+    ]);
+
+    return {
+      items: rows.map((a) => ({ id: a.id, name: a.name, createdAt: a.createdAt })),
+      meta: { total, limit: input.limit, offset: input.offset }
+    };
   }
 }

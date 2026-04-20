@@ -1,29 +1,32 @@
 import { BookOpen, Plane, TrendingUp, DollarSign, PlaneTakeoff, Calendar } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { listBookings } from '@/lib/api/api-client';
+import { listBookingsPaged } from '@/lib/api/api-client';
 import { getSessionToken } from '@/lib/auth/session';
 import Link from 'next/link';
 
+const STATS_LIMIT = 100;
+
 export default async function DashboardHomePage() {
   const token = await getSessionToken();
-  let bookings: Awaited<ReturnType<typeof listBookings>> = [];
+  let totalBookings = 0;
+  let confirmedBookings = 0;
+  let totalRevenue = 0;
+  let currency = 'USD';
+  let recentBookings: Awaited<ReturnType<typeof listBookingsPaged>>['items'] = [];
 
   if (token) {
     try {
-      bookings = await listBookings(token);
+      const result = await listBookingsPaged(token, { limit: STATS_LIMIT, offset: 0 });
+      totalBookings = result.meta.total;
+      confirmedBookings = result.items.filter((b) => b.status === 'confirmed').length;
+      totalRevenue = result.items.reduce((sum, b) => sum + parseFloat(b.totalPrice.amount), 0);
+      currency = result.items[0]?.totalPrice.currency ?? 'USD';
+      recentBookings = result.items.slice(0, 5);
     } catch {
-      // bookings will remain empty
+      // stats will remain defaults
     }
   }
-
-  const totalBookings = bookings.length;
-  const draftBookings = bookings.filter((b) => b.status === 'draft').length;
-  const confirmedBookings = bookings.filter((b) => b.status === 'confirmed').length;
-  const totalRevenue = bookings.reduce((sum, b) => sum + parseFloat(b.totalPrice.amount), 0);
-  const currency = bookings[0]?.totalPrice.currency ?? 'USD';
-
-  const recentBookings = bookings.slice(0, 5);
 
   return (
     <div className="space-y-6">

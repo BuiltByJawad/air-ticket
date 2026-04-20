@@ -1,5 +1,18 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import type { PaginatedResult } from '../app/pagination.types';
+
+export interface AuditLog {
+  id: string;
+  action: string;
+  resource: string;
+  resourceId?: string;
+  agencyId?: string;
+  userId?: string;
+  requestId?: string;
+  metadata?: Record<string, unknown>;
+  createdAt: Date;
+}
 
 export interface AuditLogInput {
   action: string;
@@ -47,7 +60,7 @@ export class AuditService {
     userId?: string;
     limit?: number;
     offset?: number;
-  }): Promise<{ items: unknown[]; total: number; limit: number; offset: number }> {
+  }): Promise<PaginatedResult<AuditLog>> {
     const limit = query.limit ?? 50;
     const offset = query.offset ?? 0;
 
@@ -67,6 +80,9 @@ export class AuditService {
       this.prisma.auditLog.count({ where })
     ]);
 
-    return { items, total, limit, offset };
+    return {
+      items: items as AuditLog[],
+      meta: { total, limit, offset }
+    };
   }
 }

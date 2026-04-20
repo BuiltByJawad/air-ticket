@@ -29,10 +29,7 @@ class AuditLogEntryDto {
   createdAt: Date;
 }
 
-export class AuditLogListResponseDto {
-  @ApiProperty({ type: [AuditLogEntryDto] })
-  items: AuditLogEntryDto[];
-
+class PaginationMetaDto {
   @ApiProperty({ example: 100 })
   total: number;
 
@@ -41,4 +38,12 @@ export class AuditLogListResponseDto {
 
   @ApiProperty({ example: 0 })
   offset: number;
+}
+
+export class AuditLogListResponseDto {
+  @ApiProperty({ type: [AuditLogEntryDto] })
+  items: AuditLogEntryDto[];
+
+  @ApiProperty({ type: PaginationMetaDto })
+  meta: PaginationMetaDto;
 }

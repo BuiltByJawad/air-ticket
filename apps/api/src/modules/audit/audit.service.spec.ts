@@ -96,9 +96,9 @@ describe('AuditService', () => {
       const result = await service.listLogs({ limit: 10, offset: 0 });
 
       expect(result.items).toEqual(mockLogs);
-      expect(result.total).toBe(1);
-      expect(result.limit).toBe(10);
-      expect(result.offset).toBe(0);
+      expect(result.meta.total).toBe(1);
+      expect(result.meta.limit).toBe(10);
+      expect(result.meta.offset).toBe(0);
     });
 
     it('should apply filters when provided', async () => {

@@ -216,7 +216,7 @@ describeE2E('App E2E', () => {
         .post('/admin/users/agents')
         .set('Authorization', `Bearer ${adminToken}`)
         .send({ email: `e2e-bad-${Date.now()}@test.com`, password, agencyId: 'nonexistent' })
-        .expect(400);
+        .expect(404);
     });
   });
 
@@ -309,15 +309,9 @@ describeE2E('App E2E', () => {
     let bookingId: string;
 
     it('should create a booking to operate on', async () => {
-      const loginRes = await request(app.getHttpServer())
-        .post('/auth/login')
-        .send({ email: agentEmail, password });
-
-      const token = loginRes.body.data.accessToken;
-
       const res = await request(app.getHttpServer())
         .post('/bookings')
-        .set('Authorization', `Bearer ${token}`)
+        .set('Authorization', `Bearer ${agentToken}`)
         .send({
           offerId: 'offer-e2e-confirm',
           offerData: { test: true },
@@ -330,15 +324,9 @@ describeE2E('App E2E', () => {
     });
 
     it('PATCH /bookings/:id/confirm — should confirm a draft booking', async () => {
-      const loginRes = await request(app.getHttpServer())
-        .post('/auth/login')
-        .send({ email: agentEmail, password });
-
-      const token = loginRes.body.data.accessToken;
-
       const res = await request(app.getHttpServer())
         .patch(`/bookings/${bookingId}/confirm`)
-        .set('Authorization', `Bearer ${token}`)
+        .set('Authorization', `Bearer ${agentToken}`)
         .expect(200);
 
       expect(res.body.success).toBe(true);
@@ -346,31 +334,19 @@ describeE2E('App E2E', () => {
     });
 
     it('PATCH /bookings/:id/cancel — should cancel a confirmed booking', async () => {
-      const loginRes = await request(app.getHttpServer())
-        .post('/auth/login')
-        .send({ email: agentEmail, password });
-
-      const token = loginRes.body.data.accessToken;
-
       const res = await request(app.getHttpServer())
         .patch(`/bookings/${bookingId}/cancel`)
-        .set('Authorization', `Bearer ${token}`)
+        .set('Authorization', `Bearer ${agentToken}`)
         .expect(200);
 
       expect(res.body.success).toBe(true);
       expect(res.body.data.status).toBe('cancelled');
     });
 
-    it('PATCH /bookings/:id/confirm — should reject cancelling already cancelled', async () => {
-      const loginRes = await request(app.getHttpServer())
-        .post('/auth/login')
-        .send({ email: agentEmail, password });
-
-      const token = loginRes.body.data.accessToken;
-
+    it('PATCH /bookings/:id/cancel — should reject cancelling already cancelled', async () => {
       await request(app.getHttpServer())
         .patch(`/bookings/${bookingId}/cancel`)
-        .set('Authorization', `Bearer ${token}`)
+        .set('Authorization', `Bearer ${agentToken}`)
         .expect(400);
     });
   });

@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsJSON, MinLength, MaxLength } from 'class-validator';
+import { IsString, IsNotEmpty, MinLength, MaxLength } from 'class-validator';
 
 export class CreateBookingDto {
   @ApiProperty({ example: 'off_0001' })
@@ -8,7 +8,7 @@ export class CreateBookingDto {
   offerId: string;
 
   @ApiProperty({ example: { segments: [] } })
-  @IsJSON()
+  @IsNotEmpty()
   offerData: Record<string, unknown>;
 
   @ApiProperty({ example: 'USD' })

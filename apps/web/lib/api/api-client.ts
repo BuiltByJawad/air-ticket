@@ -409,6 +409,24 @@ export async function listAgencies(accessToken: string): Promise<AdminAgency[]> 
   return parseApiResponse<AdminAgency[]>(res);
 }
 
+export async function listAgenciesPaged(
+  accessToken: string,
+  input?: { limit?: number; offset?: number }
+): Promise<PaginatedResult<AdminAgency>> {
+  const params = new URLSearchParams();
+  if (input?.limit !== undefined) params.set('limit', String(input.limit));
+  if (input?.offset !== undefined) params.set('offset', String(input.offset));
+
+  const url = params.size > 0 ? `/admin/agencies/paged?${params.toString()}` : '/admin/agencies/paged';
+
+  const res = await apiFetch(url, {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${accessToken}` }
+  });
+  if (!res.ok) throw await toApiError(res, 'Failed to list agencies');
+  return parseApiResponse<PaginatedResult<AdminAgency>>(res);
+}
+
 export async function listUsers(accessToken: string): Promise<AdminUser[]> {
   const res = await apiFetch('/admin/users', {
     method: 'GET',
@@ -416,6 +434,65 @@ export async function listUsers(accessToken: string): Promise<AdminUser[]> {
   });
   if (!res.ok) throw await toApiError(res, 'Failed to list users');
   return parseApiResponse<AdminUser[]>(res);
+}
+
+export async function listUsersPaged(
+  accessToken: string,
+  input?: { limit?: number; offset?: number }
+): Promise<PaginatedResult<AdminUser>> {
+  const params = new URLSearchParams();
+  if (input?.limit !== undefined) params.set('limit', String(input.limit));
+  if (input?.offset !== undefined) params.set('offset', String(input.offset));
+
+  const url = params.size > 0 ? `/admin/users/paged?${params.toString()}` : '/admin/users/paged';
+
+  const res = await apiFetch(url, {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${accessToken}` }
+  });
+  if (!res.ok) throw await toApiError(res, 'Failed to list users');
+  return parseApiResponse<PaginatedResult<AdminUser>>(res);
+}
+
+export interface AuditLog {
+  id: string;
+  action: string;
+  resource: string;
+  resourceId?: string;
+  agencyId?: string;
+  userId?: string;
+  requestId?: string;
+  metadata?: Record<string, unknown>;
+  createdAt: string;
+}
+
+export async function listAuditLogsPaged(
+  accessToken: string,
+  input?: {
+    action?: string;
+    resource?: string;
+    agencyId?: string;
+    userId?: string;
+    limit?: number;
+    offset?: number;
+  }
+): Promise<PaginatedResult<AuditLog>> {
+  const params = new URLSearchParams();
+  if (input?.action) params.set('action', input.action);
+  if (input?.resource) params.set('resource', input.resource);
+  if (input?.agencyId) params.set('agencyId', input.agencyId);
+  if (input?.userId) params.set('userId', input.userId);
+  if (input?.limit !== undefined) params.set('limit', String(input.limit));
+  if (input?.offset !== undefined) params.set('offset', String(input.offset));
+
+  const url = params.size > 0 ? `/admin/audit-log?${params.toString()}` : '/admin/audit-log';
+
+  const res = await apiFetch(url, {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${accessToken}` }
+  });
+  if (!res.ok) throw await toApiError(res, 'Failed to list audit logs');
+  return parseApiResponse<PaginatedResult<AuditLog>>(res);
 }
 
 export async function suggestAirports(query: string, accessToken?: string): Promise<AirportSuggestion[]> {
