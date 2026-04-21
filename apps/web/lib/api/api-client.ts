@@ -576,3 +576,44 @@ export async function suggestAirports(query: string, accessToken?: string): Prom
 
   return parseApiResponse<AirportSuggestion[]>(res);
 }
+
+export interface AdminStats {
+  totalAgencies: number;
+  totalUsers: number;
+  totalAgents: number;
+  totalBookings: number;
+  bookingsByStatus: { draft: number; confirmed: number; cancelled: number };
+  totalRevenue: string;
+  revenueCurrency: string;
+  topAgencies: { agencyId: string; agencyName: string; revenue: string; bookingCount: number }[];
+  recentBookingsCount: number;
+}
+
+export async function getAdminStats(accessToken: string): Promise<AdminStats> {
+  const res = await apiFetch('/admin/stats', {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${accessToken}` }
+  });
+  if (!res.ok) throw await toApiError(res, 'Failed to get admin stats');
+  return parseApiResponse<AdminStats>(res);
+}
+
+export async function forgotPassword(email: string): Promise<{ message: string; token?: string }> {
+  const res = await apiFetch('/auth/forgot-password', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email })
+  });
+  if (!res.ok) throw await toApiError(res, 'Failed to request password reset');
+  return parseApiResponse<{ message: string; token?: string }>(res);
+}
+
+export async function resetPassword(token: string, password: string): Promise<{ message: string }> {
+  const res = await apiFetch('/auth/reset-password', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token, password })
+  });
+  if (!res.ok) throw await toApiError(res, 'Failed to reset password');
+  return parseApiResponse<{ message: string }>(res);
+}

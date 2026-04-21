@@ -1,5 +1,6 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/common';
 import * as bcrypt from 'bcryptjs';
+import * as crypto from 'crypto';
 import { JwtService } from '@nestjs/jwt';
 import { UsersService, type UserRole } from '../users/users.service';
 import { AgenciesService } from '../agencies/agencies.service';
@@ -106,6 +107,68 @@ export class AuthService {
         agency: dbUser?.agency ?? null
       }
     };
+  }
+
+  async forgotPassword(email: string): Promise<{ token: string }> {
+    const user = await this.usersService.findByEmail(email);
+    if (!user) {
+      // Don't reveal whether the email exists
+      return { token: '' };
+    }
+
+    const token = crypto.randomBytes(32).toString('hex');
+    const tokenHash = await bcrypt.hash(token, 12);
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+    await this.prisma.passwordReset.create({
+      data: { email, tokenHash, expiresAt }
+    });
+
+    // In production, send email with reset link containing the token.
+    // For now, return the token directly for testing/development.
+    return { token };
+  }
+
+  async resetPassword(token: string, newPassword: string): Promise<void> {
+    const resets = await this.prisma.passwordReset.findMany({
+      where: { usedAt: null, expiresAt: { gt: new Date() } },
+      orderBy: { createdAt: 'desc' }
+    });
+
+    let matchedReset = null;
+    for (const reset of resets) {
+      const ok = await bcrypt.compare(token, reset.tokenHash);
+      if (ok) {
+        matchedReset = reset;
+        break;
+      }
+    }
+
+    if (!matchedReset) {
+      throw new BadRequestException('Invalid or expired reset token');
+    }
+
+    const user = await this.usersService.findByEmail(matchedReset.email);
+    if (!user) {
+      throw new BadRequestException('User not found');
+    }
+
+    const passwordHash = await bcrypt.hash(newPassword, 12);
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { passwordHash }
+    });
+
+    await this.prisma.passwordReset.update({
+      where: { id: matchedReset.id },
+      data: { usedAt: new Date() }
+    });
+
+    // Invalidate all other pending resets for this email
+    await this.prisma.passwordReset.updateMany({
+      where: { email: matchedReset.email, usedAt: null },
+      data: { usedAt: new Date() }
+    });
   }
 
   private async issueToken(input: { userId: string; email: string; role: UserRole; agencyId: string | null }): Promise<AuthTokenResponse> {

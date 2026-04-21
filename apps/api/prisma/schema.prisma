@@ -82,3 +82,15 @@ model AuditLog {
   @@index([userId])
   @@index([createdAt])
 }
+
+model PasswordReset {
+  id        String   @id @default(uuid())
+  email     String
+  tokenHash String   @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([email])
+  @@index([tokenHash])
+}

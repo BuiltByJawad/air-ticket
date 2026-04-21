@@ -9,6 +9,8 @@ import { Public } from './public.decorator';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 import { AuthTokenResponseDto } from './dto/auth-token.response';
 import { ProfileResponseDto } from './dto/profile.response';
 
@@ -56,6 +58,39 @@ export class AuthController {
       metadata: { email: body.email }
     });
     return result;
+  }
+
+  @Public()
+  @Post('forgot-password')
+  @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { ttl: 60_000, limit: 3 } })
+  @ApiOperation({ summary: 'Request a password reset token' })
+  @ApiResponse({ status: HttpStatus.OK, description: 'Reset token generated (returned in dev, emailed in prod)' })
+  async forgotPassword(@Req() req: Request, @Body() body: ForgotPasswordDto) {
+    const result = await this.authService.forgotPassword(body.email);
+    await this.auditService.log({
+      action: 'auth.forgot_password',
+      resource: 'user',
+      requestId: req.requestId,
+      metadata: { email: body.email }
+    });
+    return { message: 'If an account with that email exists, a reset token has been generated.', token: result.token };
+  }
+
+  @Public()
+  @Post('reset-password')
+  @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { ttl: 60_000, limit: 5 } })
+  @ApiOperation({ summary: 'Reset password using a valid reset token' })
+  @ApiResponse({ status: HttpStatus.OK, description: 'Password reset successful' })
+  async resetPassword(@Req() req: Request, @Body() body: ResetPasswordDto) {
+    await this.authService.resetPassword(body.token, body.password);
+    await this.auditService.log({
+      action: 'auth.reset_password',
+      resource: 'user',
+      requestId: req.requestId
+    });
+    return { message: 'Password has been reset successfully.' };
   }
 
   @Get('me')

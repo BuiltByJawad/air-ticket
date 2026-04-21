@@ -8,6 +8,7 @@ import { BookingsService } from './bookings.service';
 import { AuditService } from '../audit/audit.service';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import { ListBookingsQueryDto } from './dto/list-bookings-query.dto';
+import { ExportBookingsQueryDto } from './dto/export-bookings-query.dto';
 import { BookingResponseDto } from './dto/booking.response';
 import { PaginatedBookingsResponseDto } from './dto/paginated-bookings.response';
 
@@ -64,6 +65,32 @@ export class BookingsController {
       limit,
       offset
     });
+  }
+
+  @Get('export/csv')
+  @Roles('agent', 'admin')
+  @Throttle({ default: { ttl: 60_000, limit: 10 } })
+  @ApiOperation({ summary: 'Export bookings as CSV with date range filtering' })
+  async exportCsv(@CurrentUser() user: CurrentUserData, @Query() query: ExportBookingsQueryDto, @Req() req: Request) {
+    const csv = await this.bookingsService.exportCsv(user, {
+      agencyId: query.agencyId,
+      status: query.status,
+      fromDate: query.fromDate,
+      toDate: query.toDate
+    });
+
+    await this.auditService.log({
+      action: 'booking.export_csv',
+      resource: 'booking',
+      agencyId: user.agencyId,
+      userId: user.sub,
+      requestId: req.requestId,
+      metadata: { status: query.status, fromDate: query.fromDate, toDate: query.toDate }
+    });
+
+    req.res?.setHeader('Content-Type', 'text/csv');
+    req.res?.setHeader('Content-Disposition', `attachment; filename=bookings-${new Date().toISOString().slice(0, 10)}.csv`);
+    return csv;
   }
 
   @Get(':id')

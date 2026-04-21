@@ -212,4 +212,63 @@ export class BookingsService {
 
     return toBooking(booking);
   }
+
+  async exportCsv(
+    user: CurrentUserData,
+    input: {
+      agencyId?: string;
+      status?: string;
+      fromDate?: string;
+      toDate?: string;
+    }
+  ): Promise<string> {
+    const where: Prisma.BookingWhereInput = {};
+
+    if (user.role === 'agent') {
+      if (!user.agencyId) {
+        throw new BadRequestException('User has no agency');
+      }
+      where.agencyId = user.agencyId;
+    } else if (input.agencyId) {
+      where.agencyId = input.agencyId;
+    }
+
+    if (input.status) {
+      where.status = input.status as Prisma.BookingWhereInput['status'];
+    }
+
+    if (input.fromDate || input.toDate) {
+      where.createdAt = {
+        ...(input.fromDate ? { gte: new Date(input.fromDate) } : {}),
+        ...(input.toDate ? { lte: new Date(input.toDate) } : {})
+      };
+    }
+
+    const rows = await this.prisma.booking.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      include: {
+        agency: { select: { name: true } },
+        createdByUser: { select: { email: true, name: true } }
+      }
+    });
+
+    const header = 'ID,Status,Offer ID,Currency,Amount,Agency,Agent Email,Created At,Updated At';
+    const lines = rows.map((r) => {
+      const esc = (v: string) => `"${v.replace(/"/g, '""')}"`;
+      return [
+        esc(r.id),
+        r.status,
+        esc(r.offerId),
+        r.currency,
+        r.amount,
+        esc(r.agency?.name ?? ''),
+        esc(r.createdByUser?.email ?? ''),
+        r.createdAt.toISOString(),
+        r.updatedAt.toISOString()
+      ].join(',');
+    });
+
+    return [header, ...lines].join('\n');
+  }
 }

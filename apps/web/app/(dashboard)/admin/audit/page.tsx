@@ -3,6 +3,9 @@ import { getSessionToken } from '@/lib/auth/session';
 import { ShieldCheck } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { PaginationControls } from '@/components/shared/pagination-controls';
+import { AuditActionFilter } from '@/components/shared/audit-action-filter';
+import { AuditResourceFilter } from '@/components/shared/audit-resource-filter';
+import { AuditLogDetail } from './components/audit-log-detail';
 
 const DEFAULT_LIMIT = 20;
 
@@ -32,6 +35,11 @@ export default async function AuditLogsPage({
         <p className="text-sm text-muted-foreground">Track system activity and changes</p>
       </div>
 
+      <div className="flex flex-wrap items-center gap-3">
+        <AuditActionFilter basePath="/admin/audit" currentAction={action} />
+        <AuditResourceFilter basePath="/admin/audit" currentResource={resource} />
+      </div>
+
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -45,31 +53,7 @@ export default async function AuditLogsPage({
           ) : (
             <div className="space-y-3">
               {result.items.map((log) => (
-                <div key={log.id} className="flex flex-col gap-1 rounded-lg border p-3">
-                  <div className="flex items-center justify-between">
-                    <p className="font-medium text-sm">{log.action}</p>
-                    <span className="text-xs text-muted-foreground">
-                      {new Date(log.createdAt).toLocaleString('en-US', {
-                        month: 'short',
-                        day: 'numeric',
-                        year: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                      })}
-                    </span>
-                  </div>
-                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
-                    <span>Resource: <span className="font-medium text-foreground">{log.resource}</span></span>
-                    {log.resourceId && <span>ID: <span className="font-mono text-foreground">{log.resourceId}</span></span>}
-                    {log.userId && <span>User: <span className="font-mono text-foreground">{log.userId}</span></span>}
-                    {log.agencyId && <span>Agency: <span className="font-mono text-foreground">{log.agencyId}</span></span>}
-                  </div>
-                  {log.metadata && Object.keys(log.metadata).length > 0 && (
-                    <pre className="mt-1 text-xs text-muted-foreground bg-muted rounded p-2 overflow-x-auto">
-                      {JSON.stringify(log.metadata, null, 2)}
-                    </pre>
-                  )}
-                </div>
+                <AuditLogDetail key={log.id} log={log} />
               ))}
             </div>
           )}
