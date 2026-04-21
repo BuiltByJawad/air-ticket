@@ -402,6 +402,142 @@ describeE2E('App E2E', () => {
     });
   });
 
+  describe('Admin agency CRUD', () => {
+    let crudAgencyId: string;
+
+    it('PATCH /admin/agencies/:id — should update agency name', async () => {
+      const createRes = await request(app.getHttpServer())
+        .post('/admin/agencies')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ name: `e2e-crud-agency-${Date.now()}` })
+        .expect(201);
+
+      crudAgencyId = createRes.body.data.id;
+
+      const res = await request(app.getHttpServer())
+        .patch(`/admin/agencies/${crudAgencyId}`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ name: 'e2e-crud-updated' })
+        .expect(200);
+
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.name).toBe('e2e-crud-updated');
+    });
+
+    it('PATCH /admin/agencies/:id — should reject nonexistent agency', async () => {
+      await request(app.getHttpServer())
+        .patch('/admin/agencies/nonexistent')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ name: 'nope' })
+        .expect(404);
+    });
+
+    it('DELETE /admin/agencies/:id — should delete agency', async () => {
+      const res = await request(app.getHttpServer())
+        .delete(`/admin/agencies/${crudAgencyId}`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .expect(200);
+
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.id).toBe(crudAgencyId);
+    });
+
+    it('DELETE /admin/agencies/:id — should reject nonexistent agency', async () => {
+      await request(app.getHttpServer())
+        .delete('/admin/agencies/nonexistent')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .expect(404);
+    });
+  });
+
+  describe('Admin user CRUD', () => {
+    let crudUserId: string;
+
+    it('PATCH /admin/users/:id — should update user name', async () => {
+      const agentRes = await request(app.getHttpServer())
+        .post('/admin/users/agents')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ email: `e2e-crud-user-${Date.now()}@test.com`, password, agencyId })
+        .expect(201);
+
+      crudUserId = agentRes.body.data.id;
+
+      const res = await request(app.getHttpServer())
+        .patch(`/admin/users/${crudUserId}`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ name: 'Updated E2E User', phone: '+8801700000000' })
+        .expect(200);
+
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.name).toBe('Updated E2E User');
+      expect(res.body.data.phone).toBe('+8801700000000');
+    });
+
+    it('PATCH /admin/users/:id — should reject nonexistent user', async () => {
+      await request(app.getHttpServer())
+        .patch('/admin/users/nonexistent')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ name: 'nope' })
+        .expect(404);
+    });
+
+    it('DELETE /admin/users/:id — should delete user', async () => {
+      const res = await request(app.getHttpServer())
+        .delete(`/admin/users/${crudUserId}`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .expect(200);
+
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.id).toBe(crudUserId);
+    });
+
+    it('DELETE /admin/users/:id — should reject nonexistent user', async () => {
+      await request(app.getHttpServer())
+        .delete('/admin/users/nonexistent')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .expect(404);
+    });
+  });
+
+  describe('Admin booking confirm/cancel', () => {
+    let adminBookingId: string;
+
+    it('should create a booking for admin to operate on', async () => {
+      const res = await request(app.getHttpServer())
+        .post('/bookings')
+        .set('Authorization', `Bearer ${agentToken}`)
+        .send({
+          offerId: 'offer-e2e-admin-action',
+          offerData: { test: true },
+          currency: 'USD',
+          amount: '200.00'
+        })
+        .expect(201);
+
+      adminBookingId = res.body.data.id;
+    });
+
+    it('PATCH /bookings/:id/confirm — admin should confirm booking', async () => {
+      const res = await request(app.getHttpServer())
+        .patch(`/bookings/${adminBookingId}/confirm`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .expect(200);
+
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.status).toBe('confirmed');
+    });
+
+    it('PATCH /bookings/:id/cancel — admin should cancel booking', async () => {
+      const res = await request(app.getHttpServer())
+        .patch(`/bookings/${adminBookingId}/cancel`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .expect(200);
+
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.status).toBe('cancelled');
+    });
+  });
+
   describe('Error response format', () => {
     it('should include requestId in error responses', async () => {
       const res = await request(app.getHttpServer())

@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { PaginationControls } from '@/components/shared/pagination-controls';
 import { SearchFilter } from '@/components/shared/search-filter';
 import { AgencyActions } from './components/agency-actions';
+import { CreateAgencyForm } from './components/create-agency-form';
 
 const DEFAULT_LIMIT = 20;
 
@@ -33,7 +34,10 @@ export default async function AdminAgenciesPage({
         <p className="text-sm text-muted-foreground">Manage travel agencies</p>
       </div>
 
-      <SearchFilter basePath="/admin/agencies" param="search" placeholder="Search agencies..." />
+      <div className="flex items-center justify-between gap-3">
+        <SearchFilter basePath="/admin/agencies" param="search" placeholder="Search agencies..." />
+        <CreateAgencyForm />
+      </div>
 
       <Card>
         <CardHeader>

@@ -202,9 +202,33 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
                 })}
               </p>
             </div>
+            <div>
+              <p className="text-muted-foreground">Agency ID</p>
+              <p className="font-mono text-xs truncate">{booking.agencyId}</p>
+            </div>
+            <div>
+              <p className="text-muted-foreground">Created By</p>
+              <p className="font-mono text-xs truncate">{booking.createdByUserId}</p>
+            </div>
           </div>
         </CardContent>
       </Card>
+
+      {offerData && Object.keys(offerData).length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Receipt className="h-5 w-5" />
+              Raw Offer Data
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <pre className="text-xs text-muted-foreground bg-muted rounded p-3 overflow-x-auto max-h-96">
+              {JSON.stringify(offerData, null, 2)}
+            </pre>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Actions */}
       {booking.status === 'draft' && (

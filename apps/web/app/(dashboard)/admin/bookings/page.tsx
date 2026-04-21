@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { PaginationControls } from '@/components/shared/pagination-controls';
 import { BookingStatusFilter } from '@/components/shared/booking-status-filter';
+import { BookingActions } from './components/booking-actions';
 import Link from 'next/link';
 
 const DEFAULT_LIMIT = 20;
@@ -49,8 +50,8 @@ export default async function AdminBookingsPage({
           ) : (
             <div className="space-y-3">
               {result.items.map((b) => (
-                <Link key={b.id} href={`/bookings/${b.id}`}>
-                  <div className="flex items-center justify-between rounded-lg border p-3 hover:bg-accent transition-colors">
+                <div key={b.id} className="flex items-center justify-between rounded-lg border p-3">
+                  <Link href={`/bookings/${b.id}`} className="flex items-center justify-between flex-1 min-w-0 hover:bg-accent transition-colors -m-3 p-3">
                     <div className="min-w-0">
                       <p className="font-medium text-sm truncate">{b.offerId}</p>
                       <p className="text-xs text-muted-foreground font-mono truncate">{b.id}</p>
@@ -64,8 +65,9 @@ export default async function AdminBookingsPage({
                       </Badge>
                       <span className="text-xs font-medium">{b.totalPrice.currency} {b.totalPrice.amount}</span>
                     </div>
-                  </div>
-                </Link>
+                  </Link>
+                  <BookingActions id={b.id} status={b.status} />
+                </div>
               ))}
             </div>
           )}

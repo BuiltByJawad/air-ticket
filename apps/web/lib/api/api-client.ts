@@ -469,6 +469,26 @@ export interface AuditLog {
   createdAt: string;
 }
 
+export async function createAgency(accessToken: string, input: { name: string }): Promise<AdminAgency> {
+  const res = await apiFetch('/admin/agencies', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(input)
+  });
+  if (!res.ok) throw await toApiError(res, 'Failed to create agency');
+  return parseApiResponse<AdminAgency>(res);
+}
+
+export async function createAgent(accessToken: string, input: { agencyId: string; email: string; password: string }): Promise<AdminUser> {
+  const res = await apiFetch('/admin/users/agents', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(input)
+  });
+  if (!res.ok) throw await toApiError(res, 'Failed to create agent');
+  return parseApiResponse<AdminUser>(res);
+}
+
 export async function updateAgency(
   accessToken: string,
   id: string,

@@ -77,7 +77,7 @@ export class BookingsController {
   }
 
   @Patch(':id/confirm')
-  @Roles('agent')
+  @Roles('agent', 'admin')
   @Throttle({ default: { ttl: 60_000, limit: 30 } })
   @ApiOperation({ summary: 'Confirm a draft booking' })
   @ApiResponse({ status: HttpStatus.OK, description: 'Booking confirmed', type: BookingResponseDto })
@@ -97,7 +97,7 @@ export class BookingsController {
   }
 
   @Patch(':id/cancel')
-  @Roles('agent')
+  @Roles('agent', 'admin')
   @Throttle({ default: { ttl: 60_000, limit: 30 } })
   @ApiOperation({ summary: 'Cancel a booking' })
   @ApiResponse({ status: HttpStatus.OK, description: 'Booking cancelled', type: BookingResponseDto })

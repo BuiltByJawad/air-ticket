@@ -1,8 +1,17 @@
 'use server';
 
 import { getSessionToken } from '@/lib/auth/session';
-import { updateAgency, deleteAgency } from '@/lib/api/api-client';
+import { createAgency, updateAgency, deleteAgency } from '@/lib/api/api-client';
 import { revalidatePath } from 'next/cache';
+
+export async function createAgencyAction(data: { name: string }) {
+  const token = await getSessionToken();
+  if (!token) throw new Error('Not authenticated');
+
+  await createAgency(token, data);
+  revalidatePath('/admin/agencies');
+  revalidatePath('/admin');
+}
 
 export async function updateAgencyAction(id: string, data: { name?: string }) {
   const token = await getSessionToken();
