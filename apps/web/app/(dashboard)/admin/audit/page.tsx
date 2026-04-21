@@ -1,5 +1,4 @@
-import { redirect } from 'next/navigation';
-import { ApiError, fetchMe, listAuditLogsPaged } from '@/lib/api/api-client';
+import { listAuditLogsPaged } from '@/lib/api/api-client';
 import { getSessionToken } from '@/lib/auth/session';
 import { ShieldCheck } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,21 +12,7 @@ export default async function AuditLogsPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const token = await getSessionToken();
-  if (!token) redirect('/login');
-
-  let me: Awaited<ReturnType<typeof fetchMe>>;
-  try {
-    me = await fetchMe(token);
-  } catch (err: unknown) {
-    if (err instanceof ApiError && err.status === 401) {
-      redirect('/login');
-    }
-    throw err;
-  }
-
-  if (me.user.role !== 'admin') {
-    redirect('/dashboard');
-  }
+  if (!token) return null;
 
   const sp = await searchParams;
   const limit = Number(sp.limit) || DEFAULT_LIMIT;

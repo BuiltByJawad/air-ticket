@@ -1,5 +1,4 @@
-import { redirect } from 'next/navigation';
-import { ApiError, fetchMe, listAgenciesPaged, listUsersPaged, listBookingsPaged } from '@/lib/api/api-client';
+import { listAgenciesPaged, listUsersPaged, listBookingsPaged } from '@/lib/api/api-client';
 import { getSessionToken } from '@/lib/auth/session';
 import { Building2, Users, BookOpen, ShieldCheck, ChevronRight } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,21 +6,7 @@ import Link from 'next/link';
 
 export default async function AdminPage() {
   const token = await getSessionToken();
-  if (!token) redirect('/login');
-
-  let me: Awaited<ReturnType<typeof fetchMe>>;
-  try {
-    me = await fetchMe(token);
-  } catch (err: unknown) {
-    if (err instanceof ApiError && err.status === 401) {
-      redirect('/login');
-    }
-    throw err;
-  }
-
-  if (me.user.role !== 'admin') {
-    redirect('/dashboard');
-  }
+  if (!token) return null;
 
   const [agenciesResult, usersResult, bookingsResult] = await Promise.all([
     listAgenciesPaged(token, { limit: 1, offset: 0 }).catch(() => ({ items: [], meta: { total: 0, limit: 1, offset: 0 } })),

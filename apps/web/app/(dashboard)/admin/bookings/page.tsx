@@ -1,10 +1,10 @@
-import { redirect } from 'next/navigation';
-import { ApiError, fetchMe, listBookingsPaged } from '@/lib/api/api-client';
+import { listBookingsPaged } from '@/lib/api/api-client';
 import { getSessionToken } from '@/lib/auth/session';
 import { BookOpen } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { PaginationControls } from '@/components/shared/pagination-controls';
+import { BookingStatusFilter } from '@/components/shared/booking-status-filter';
 import Link from 'next/link';
 
 const DEFAULT_LIMIT = 20;
@@ -15,21 +15,7 @@ export default async function AdminBookingsPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const token = await getSessionToken();
-  if (!token) redirect('/login');
-
-  let me: Awaited<ReturnType<typeof fetchMe>>;
-  try {
-    me = await fetchMe(token);
-  } catch (err: unknown) {
-    if (err instanceof ApiError && err.status === 401) {
-      redirect('/login');
-    }
-    throw err;
-  }
-
-  if (me.user.role !== 'admin') {
-    redirect('/dashboard');
-  }
+  if (!token) return null;
 
   const sp = await searchParams;
   const limit = Number(sp.limit) || DEFAULT_LIMIT;
@@ -47,6 +33,8 @@ export default async function AdminBookingsPage({
         <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">All Bookings</h1>
         <p className="text-sm text-muted-foreground">View and manage all bookings across agencies</p>
       </div>
+
+      <BookingStatusFilter basePath="/admin/bookings" currentStatus={status} />
 
       <Card>
         <CardHeader>

@@ -63,10 +63,22 @@ export class UsersService {
     return rows;
   }
 
-  async listAllPaged(input: { limit: number; offset: number }): Promise<PaginatedResult<UserPublic>> {
+  async listAllPaged(input: { limit: number; offset: number; role?: string; search?: string }): Promise<PaginatedResult<UserPublic>> {
+    const where: Record<string, unknown> = {};
+    if (input.role) {
+      where.role = input.role;
+    }
+    if (input.search) {
+      where.OR = [
+        { name: { contains: input.search, mode: 'insensitive' } },
+        { email: { contains: input.search, mode: 'insensitive' } }
+      ];
+    }
+
     const [total, rows] = await Promise.all([
-      this.prisma.user.count(),
+      this.prisma.user.count({ where }),
       this.prisma.user.findMany({
+        where,
         orderBy: { createdAt: 'desc' },
         select: { id: true, email: true, name: true, phone: true, role: true, createdAt: true, agencyId: true },
         skip: input.offset,
@@ -136,5 +148,33 @@ export class UsersService {
       agencyId: user.agencyId,
       createdAt: user.createdAt
     };
+  }
+
+  async update(id: string, input: { name?: string; phone?: string; agencyId?: string | null }): Promise<UserPublic> {
+    const existing = await this.prisma.user.findUnique({ where: { id } });
+    if (!existing) {
+      throw new NotFoundException('User not found');
+    }
+
+    const updated = await this.prisma.user.update({
+      where: { id },
+      data: { ...input },
+      select: { id: true, email: true, name: true, phone: true, role: true, createdAt: true, agencyId: true }
+    });
+
+    return updated;
+  }
+
+  async delete(id: string): Promise<UserPublic> {
+    const existing = await this.prisma.user.findUnique({
+      where: { id },
+      select: { id: true, email: true, name: true, phone: true, role: true, createdAt: true, agencyId: true }
+    });
+    if (!existing) {
+      throw new NotFoundException('User not found');
+    }
+
+    await this.prisma.user.delete({ where: { id } });
+    return existing;
   }
 }

@@ -1,9 +1,10 @@
-import { redirect } from 'next/navigation';
-import { ApiError, fetchMe, listAgenciesPaged } from '@/lib/api/api-client';
+import { listAgenciesPaged } from '@/lib/api/api-client';
 import { getSessionToken } from '@/lib/auth/session';
 import { Building2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { PaginationControls } from '@/components/shared/pagination-controls';
+import { SearchFilter } from '@/components/shared/search-filter';
+import { AgencyActions } from './components/agency-actions';
 
 const DEFAULT_LIMIT = 20;
 
@@ -13,27 +14,14 @@ export default async function AdminAgenciesPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const token = await getSessionToken();
-  if (!token) redirect('/login');
-
-  let me: Awaited<ReturnType<typeof fetchMe>>;
-  try {
-    me = await fetchMe(token);
-  } catch (err: unknown) {
-    if (err instanceof ApiError && err.status === 401) {
-      redirect('/login');
-    }
-    throw err;
-  }
-
-  if (me.user.role !== 'admin') {
-    redirect('/dashboard');
-  }
+  if (!token) return null;
 
   const sp = await searchParams;
   const limit = Number(sp.limit) || DEFAULT_LIMIT;
   const offset = Number(sp.offset) || 0;
+  const search = typeof sp.search === 'string' ? sp.search : undefined;
 
-  const result = await listAgenciesPaged(token, { limit, offset }).catch(() => ({
+  const result = await listAgenciesPaged(token, { limit, offset, search }).catch(() => ({
     items: [],
     meta: { total: 0, limit, offset }
   }));
@@ -44,6 +32,8 @@ export default async function AdminAgenciesPage({
         <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Agencies</h1>
         <p className="text-sm text-muted-foreground">Manage travel agencies</p>
       </div>
+
+      <SearchFilter basePath="/admin/agencies" param="search" placeholder="Search agencies..." />
 
       <Card>
         <CardHeader>
@@ -63,14 +53,17 @@ export default async function AdminAgenciesPage({
                     <p className="font-medium text-sm truncate">{a.name}</p>
                     <p className="text-xs text-muted-foreground font-mono truncate">{a.id}</p>
                   </div>
-                  <p className="text-xs text-muted-foreground shrink-0">
-                    {new Date(a.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                  </p>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <p className="text-xs text-muted-foreground">
+                      {new Date(a.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                    </p>
+                    <AgencyActions id={a.id} name={a.name} />
+                  </div>
                 </div>
               ))}
             </div>
           )}
-          <PaginationControls basePath="/admin/agencies" meta={result.meta} />
+          <PaginationControls basePath="/admin/agencies" meta={result.meta} params={{ search }} />
         </CardContent>
       </Card>
     </div>

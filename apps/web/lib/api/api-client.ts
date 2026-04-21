@@ -411,11 +411,12 @@ export async function listAgencies(accessToken: string): Promise<AdminAgency[]> 
 
 export async function listAgenciesPaged(
   accessToken: string,
-  input?: { limit?: number; offset?: number }
+  input?: { limit?: number; offset?: number; search?: string }
 ): Promise<PaginatedResult<AdminAgency>> {
   const params = new URLSearchParams();
   if (input?.limit !== undefined) params.set('limit', String(input.limit));
   if (input?.offset !== undefined) params.set('offset', String(input.offset));
+  if (input?.search) params.set('search', input.search);
 
   const url = params.size > 0 ? `/admin/agencies/paged?${params.toString()}` : '/admin/agencies/paged';
 
@@ -438,11 +439,13 @@ export async function listUsers(accessToken: string): Promise<AdminUser[]> {
 
 export async function listUsersPaged(
   accessToken: string,
-  input?: { limit?: number; offset?: number }
+  input?: { limit?: number; offset?: number; role?: string; search?: string }
 ): Promise<PaginatedResult<AdminUser>> {
   const params = new URLSearchParams();
   if (input?.limit !== undefined) params.set('limit', String(input.limit));
   if (input?.offset !== undefined) params.set('offset', String(input.offset));
+  if (input?.role) params.set('role', input.role);
+  if (input?.search) params.set('search', input.search);
 
   const url = params.size > 0 ? `/admin/users/paged?${params.toString()}` : '/admin/users/paged';
 
@@ -464,6 +467,52 @@ export interface AuditLog {
   requestId?: string;
   metadata?: Record<string, unknown>;
   createdAt: string;
+}
+
+export async function updateAgency(
+  accessToken: string,
+  id: string,
+  input: { name?: string }
+): Promise<AdminAgency> {
+  const res = await apiFetch(`/admin/agencies/${id}`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(input)
+  });
+  if (!res.ok) throw await toApiError(res, 'Failed to update agency');
+  return parseApiResponse<AdminAgency>(res);
+}
+
+export async function deleteAgency(accessToken: string, id: string): Promise<AdminAgency> {
+  const res = await apiFetch(`/admin/agencies/${id}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${accessToken}` }
+  });
+  if (!res.ok) throw await toApiError(res, 'Failed to delete agency');
+  return parseApiResponse<AdminAgency>(res);
+}
+
+export async function updateUser(
+  accessToken: string,
+  id: string,
+  input: { name?: string; phone?: string; agencyId?: string }
+): Promise<AdminUser> {
+  const res = await apiFetch(`/admin/users/${id}`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(input)
+  });
+  if (!res.ok) throw await toApiError(res, 'Failed to update user');
+  return parseApiResponse<AdminUser>(res);
+}
+
+export async function deleteUser(accessToken: string, id: string): Promise<AdminUser> {
+  const res = await apiFetch(`/admin/users/${id}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${accessToken}` }
+  });
+  if (!res.ok) throw await toApiError(res, 'Failed to delete user');
+  return parseApiResponse<AdminUser>(res);
 }
 
 export async function listAuditLogsPaged(

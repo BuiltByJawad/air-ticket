@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Post, Query, Req } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Patch, Post, Query, Req } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import type { Request } from 'express';
@@ -7,8 +7,9 @@ import { CurrentUser, type CurrentUserData } from '../../auth/current-user.decor
 import { UsersService } from '../../users/users.service';
 import { AuditService } from '../../audit/audit.service';
 import { CreateAgentDto } from '../dto/create-agent.dto';
+import { UpdateUserDto } from '../dto/update-user.dto';
 import { UserResponseDto } from '../dto/user.response';
-import { PagedQueryDto } from '../../app/dto/paged-query.dto';
+import { UserPagedQueryDto } from '../dto/user-paged-query.dto';
 
 @ApiTags('Admin - Users')
 @ApiBearerAuth()
@@ -32,10 +33,10 @@ export class AdminUsersController {
   @ApiOperation({ summary: 'List users (paged)' })
   @ApiResponse({ status: HttpStatus.OK, description: 'Users listed (paged)' })
   @Throttle({ default: { ttl: 60_000, limit: 60 } })
-  async listPaged(@Query() query: PagedQueryDto) {
+  async listPaged(@Query() query: UserPagedQueryDto) {
     const limit = query.limit ?? 20;
     const offset = query.offset ?? 0;
-    return this.usersService.listAllPaged({ limit, offset });
+    return this.usersService.listAllPaged({ limit, offset, role: query.role, search: query.search });
   }
 
   @Post('agents')
@@ -57,5 +58,39 @@ export class AdminUsersController {
     });
 
     return user;
+  }
+
+  @Patch(':id')
+  @ApiOperation({ summary: 'Update a user' })
+  @ApiResponse({ status: HttpStatus.OK, description: 'User updated', type: UserResponseDto })
+  @Throttle({ default: { ttl: 60_000, limit: 30 } })
+  async update(@Req() req: Request, @CurrentUser() caller: CurrentUserData, @Param('id') id: string, @Body() body: UpdateUserDto) {
+    const result = await this.usersService.update(id, body);
+    await this.auditService.log({
+      action: 'admin.update_user',
+      resource: 'user',
+      resourceId: id,
+      userId: caller.sub,
+      requestId: req.requestId,
+      metadata: { name: body.name, phone: body.phone, agencyId: body.agencyId }
+    });
+    return result;
+  }
+
+  @Delete(':id')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Delete a user' })
+  @ApiResponse({ status: HttpStatus.OK, description: 'User deleted', type: UserResponseDto })
+  @Throttle({ default: { ttl: 60_000, limit: 30 } })
+  async remove(@Req() req: Request, @CurrentUser() caller: CurrentUserData, @Param('id') id: string) {
+    const result = await this.usersService.delete(id);
+    await this.auditService.log({
+      action: 'admin.delete_user',
+      resource: 'user',
+      resourceId: id,
+      userId: caller.sub,
+      requestId: req.requestId
+    });
+    return result;
   }
 }

@@ -1,10 +1,12 @@
-import { redirect } from 'next/navigation';
-import { ApiError, fetchMe, listUsersPaged } from '@/lib/api/api-client';
+import { listUsersPaged } from '@/lib/api/api-client';
 import { getSessionToken } from '@/lib/auth/session';
 import { Users } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { PaginationControls } from '@/components/shared/pagination-controls';
+import { SearchFilter } from '@/components/shared/search-filter';
+import { RoleFilter } from '@/components/shared/role-filter';
+import { UserActions } from './components/user-actions';
 
 const DEFAULT_LIMIT = 20;
 
@@ -14,27 +16,15 @@ export default async function AdminUsersPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const token = await getSessionToken();
-  if (!token) redirect('/login');
-
-  let me: Awaited<ReturnType<typeof fetchMe>>;
-  try {
-    me = await fetchMe(token);
-  } catch (err: unknown) {
-    if (err instanceof ApiError && err.status === 401) {
-      redirect('/login');
-    }
-    throw err;
-  }
-
-  if (me.user.role !== 'admin') {
-    redirect('/dashboard');
-  }
+  if (!token) return null;
 
   const sp = await searchParams;
   const limit = Number(sp.limit) || DEFAULT_LIMIT;
   const offset = Number(sp.offset) || 0;
+  const search = typeof sp.search === 'string' ? sp.search : undefined;
+  const role = typeof sp.role === 'string' ? sp.role : undefined;
 
-  const result = await listUsersPaged(token, { limit, offset }).catch(() => ({
+  const result = await listUsersPaged(token, { limit, offset, search, role }).catch(() => ({
     items: [],
     meta: { total: 0, limit, offset }
   }));
@@ -44,6 +34,11 @@ export default async function AdminUsersPage({
       <div>
         <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Users</h1>
         <p className="text-sm text-muted-foreground">Manage users and roles</p>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-3">
+        <SearchFilter basePath="/admin/users" param="search" placeholder="Search users..." />
+        <RoleFilter basePath="/admin/users" currentRole={role} />
       </div>
 
       <Card>
@@ -68,12 +63,13 @@ export default async function AdminUsersPage({
                     <Badge variant={u.role === 'admin' ? 'default' : 'secondary'} className="capitalize text-xs">
                       {u.role}
                     </Badge>
+                    <UserActions id={u.id} name={u.name} phone={u.phone} agencyId={u.agencyId} />
                   </div>
                 </div>
               ))}
             </div>
           )}
-          <PaginationControls basePath="/admin/users" meta={result.meta} />
+          <PaginationControls basePath="/admin/users" meta={result.meta} params={{ search, role }} />
         </CardContent>
       </Card>
     </div>
