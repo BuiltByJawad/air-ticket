@@ -4,6 +4,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import type { CurrentUserData } from '../auth/current-user.decorator';
 import type { PaginatedResult } from '../app/pagination.types';
 import type { Booking, JsonValue } from './bookings.types';
+import PDFDocument from 'pdfkit';
 
 function toBooking(dto: {
   id: string;
@@ -270,5 +271,116 @@ export class BookingsService {
     });
 
     return [header, ...lines].join('\n');
+  }
+
+  async exportPdf(
+    user: CurrentUserData,
+    input: {
+      agencyId?: string;
+      status?: string;
+      fromDate?: string;
+      toDate?: string;
+    }
+  ): Promise<Buffer> {
+    const where: Prisma.BookingWhereInput = {};
+
+    if (user.role === 'agent') {
+      if (!user.agencyId) {
+        throw new BadRequestException('User has no agency');
+      }
+      where.agencyId = user.agencyId;
+    } else if (input.agencyId) {
+      where.agencyId = input.agencyId;
+    }
+
+    if (input.status) {
+      where.status = input.status as Prisma.BookingWhereInput['status'];
+    }
+
+    if (input.fromDate || input.toDate) {
+      where.createdAt = {
+        ...(input.fromDate ? { gte: new Date(input.fromDate) } : {}),
+        ...(input.toDate ? { lte: new Date(input.toDate) } : {})
+      };
+    }
+
+    const rows = await this.prisma.booking.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      include: {
+        agency: { select: { name: true } },
+        createdByUser: { select: { email: true, name: true } }
+      }
+    });
+
+    const doc = new PDFDocument({ margin: 40, size: 'A4' });
+    const chunks: Buffer[] = [];
+    doc.on('data', (chunk: Buffer) => chunks.push(chunk));
+
+    // Title
+    doc.fontSize(20).text('Bookings Report', { align: 'center' });
+    doc.moveDown(0.5);
+    doc.fontSize(10).fillColor('gray').text(`Generated: ${new Date().toISOString()}`, { align: 'center' });
+    doc.moveDown(1);
+
+    // Filters applied
+    const filters: string[] = [];
+    if (input.status) filters.push(`Status: ${input.status}`);
+    if (input.fromDate) filters.push(`From: ${new Date(input.fromDate).toLocaleDateString()}`);
+    if (input.toDate) filters.push(`To: ${new Date(input.toDate).toLocaleDateString()}`);
+    if (filters.length > 0) {
+      doc.fontSize(9).fillColor('gray').text(`Filters: ${filters.join(' | ')}`);
+      doc.moveDown(0.5);
+    }
+
+    doc.fillColor('black');
+
+    // Table header
+    const colX = [40, 120, 200, 280, 340, 400];
+    const headers = ['ID', 'Status', 'Offer ID', 'Currency', 'Amount', 'Agency'];
+    doc.fontSize(9).font('Helvetica-Bold');
+    headers.forEach((h, i) => doc.text(h, colX[i], doc.y, { width: 80, continued: i < headers.length - 1 }));
+    doc.text('');
+    doc.moveDown(0.3);
+    doc.moveTo(40, doc.y).lineTo(560, doc.y).stroke();
+    doc.moveDown(0.3);
+
+    // Table rows
+    doc.font('Helvetica').fontSize(8);
+    for (const r of rows) {
+      const y = doc.y;
+      if (y > 750) {
+        doc.addPage();
+        doc.fontSize(9).font('Helvetica-Bold');
+        headers.forEach((h, i) => doc.text(h, colX[i], doc.y, { width: 80, continued: i < headers.length - 1 }));
+        doc.text('');
+        doc.moveDown(0.3);
+        doc.moveTo(40, doc.y).lineTo(560, doc.y).stroke();
+        doc.moveDown(0.3);
+        doc.font('Helvetica').fontSize(8);
+      }
+
+      const id = r.id.length > 8 ? r.id.slice(0, 8) + '...' : r.id;
+      const offerId = r.offerId.length > 12 ? r.offerId.slice(0, 12) + '...' : r.offerId;
+      const agency = r.agency?.name ?? '';
+
+      doc.text(id, colX[0], doc.y, { width: 80 });
+      doc.text(r.status, colX[1], doc.y, { width: 80 });
+      doc.text(offerId, colX[2], doc.y, { width: 80 });
+      doc.text(r.currency, colX[3], doc.y, { width: 60 });
+      doc.text(r.amount, colX[4], doc.y, { width: 60 });
+      doc.text(agency, colX[5], doc.y, { width: 160 });
+      doc.moveDown(0.2);
+    }
+
+    // Footer
+    doc.moveDown(1);
+    doc.fontSize(8).fillColor('gray').text(`Total bookings: ${rows.length}`, { align: 'center' });
+
+    doc.end();
+
+    return new Promise<Buffer>((resolve) => {
+      doc.on('end', () => resolve(Buffer.concat(chunks as unknown as Uint8Array[])));
+    });
   }
 }

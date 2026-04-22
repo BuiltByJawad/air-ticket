@@ -548,4 +548,239 @@ describeE2E('App E2E', () => {
       expect(res.body.statusCode).toBe(401);
     });
   });
+
+  describe('Password reset flow', () => {
+    it('POST /auth/forgot-password — should return message (does not reveal email existence)', async () => {
+      const res = await request(app.getHttpServer())
+        .post('/auth/forgot-password')
+        .send({ email: agentEmail })
+        .expect(200);
+
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.message).toBeDefined();
+      // In dev mode, token is returned
+      expect(res.body.data.token).toBeDefined();
+    });
+
+    it('POST /auth/forgot-password — should succeed even for nonexistent email', async () => {
+      const res = await request(app.getHttpServer())
+        .post('/auth/forgot-password')
+        .send({ email: 'nonexistent@test.com' })
+        .expect(200);
+
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.message).toBeDefined();
+      expect(res.body.data.token).toBe('');
+    });
+
+    it('POST /auth/reset-password — should reset password with valid token', async () => {
+      // Request reset token
+      const forgotRes = await request(app.getHttpServer())
+        .post('/auth/forgot-password')
+        .send({ email: agentEmail })
+        .expect(200);
+
+      const resetToken = forgotRes.body.data.token;
+      expect(resetToken).toBeTruthy();
+
+      // Reset password
+      const newPassword = 'newTestPassword456';
+      const resetRes = await request(app.getHttpServer())
+        .post('/auth/reset-password')
+        .send({ token: resetToken, password: newPassword })
+        .expect(200);
+
+      expect(resetRes.body.success).toBe(true);
+      expect(resetRes.body.data.message).toBeDefined();
+
+      // Login with new password
+      const loginRes = await request(app.getHttpServer())
+        .post('/auth/login')
+        .send({ email: agentEmail, password: newPassword })
+        .expect(200);
+
+      expect(loginRes.body.data.accessToken).toBeDefined();
+
+      // Reset back to original password for other tests
+      const forgotRes2 = await request(app.getHttpServer())
+        .post('/auth/forgot-password')
+        .send({ email: agentEmail })
+        .expect(200);
+
+      await request(app.getHttpServer())
+        .post('/auth/reset-password')
+        .send({ token: forgotRes2.body.data.token, password })
+        .expect(200);
+    });
+
+    it('POST /auth/reset-password — should reject invalid token', async () => {
+      const res = await request(app.getHttpServer())
+        .post('/auth/reset-password')
+        .send({ token: 'invalid-token-12345', password: 'somePassword123' })
+        .expect(400);
+
+      expect(res.body.success).toBe(false);
+    });
+
+    it('POST /auth/reset-password — should reject short password', async () => {
+      const res = await request(app.getHttpServer())
+        .post('/auth/reset-password')
+        .send({ token: 'sometoken', password: 'short' })
+        .expect(400);
+
+      expect(res.body.success).toBe(false);
+    });
+  });
+
+  describe('Admin stats endpoint', () => {
+    it('GET /admin/stats — should return admin stats', async () => {
+      const res = await request(app.getHttpServer())
+        .get('/admin/stats')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .expect(200);
+
+      expect(res.body.success).toBe(true);
+      const data = res.body.data;
+      expect(data.totalAgencies).toBeDefined();
+      expect(data.totalUsers).toBeDefined();
+      expect(data.totalAgents).toBeDefined();
+      expect(data.totalBookings).toBeDefined();
+      expect(data.bookingsByStatus).toBeDefined();
+      expect(data.bookingsByStatus.draft).toBeDefined();
+      expect(data.bookingsByStatus.confirmed).toBeDefined();
+      expect(data.bookingsByStatus.cancelled).toBeDefined();
+      expect(data.totalRevenue).toBeDefined();
+      expect(data.revenueCurrency).toBeDefined();
+      expect(data.topAgencies).toBeDefined();
+      expect(Array.isArray(data.topAgencies)).toBe(true);
+      expect(data.recentBookingsCount).toBeDefined();
+    });
+
+    it('GET /admin/stats — should reject agent role', async () => {
+      await request(app.getHttpServer())
+        .get('/admin/stats')
+        .set('Authorization', `Bearer ${agentToken}`)
+        .expect(403);
+    });
+  });
+
+  describe('Agent stats endpoint', () => {
+    it('GET /agent/stats — should return agent stats', async () => {
+      const res = await request(app.getHttpServer())
+        .get('/agent/stats')
+        .set('Authorization', `Bearer ${agentToken}`)
+        .expect(200);
+
+      expect(res.body.success).toBe(true);
+      const data = res.body.data;
+      expect(data.totalBookings).toBeDefined();
+      expect(data.bookingsByStatus).toBeDefined();
+      expect(data.totalRevenue).toBeDefined();
+      expect(data.revenueCurrency).toBeDefined();
+      expect(data.recentBookingsCount).toBeDefined();
+      expect(data.monthlyRevenue).toBeDefined();
+      expect(Array.isArray(data.monthlyRevenue)).toBe(true);
+    });
+
+    it('GET /agent/stats — should reject admin role', async () => {
+      await request(app.getHttpServer())
+        .get('/agent/stats')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .expect(403);
+    });
+  });
+
+  describe('Booking CSV export', () => {
+    it('GET /bookings/export/csv — should return CSV content', async () => {
+      const res = await request(app.getHttpServer())
+        .get('/bookings/export/csv')
+        .set('Authorization', `Bearer ${agentToken}`)
+        .expect(200);
+
+      expect(typeof res.body).toBe('string');
+      expect(res.body).toContain('ID,Status,Offer ID,Currency,Amount,Agency,Agent Email,Created At,Updated At');
+    });
+
+    it('GET /bookings/export/csv — should filter by status', async () => {
+      const res = await request(app.getHttpServer())
+        .get('/bookings/export/csv?status=confirmed')
+        .set('Authorization', `Bearer ${agentToken}`)
+        .expect(200);
+
+      expect(typeof res.body).toBe('string');
+      expect(res.body).toContain('ID,Status');
+    });
+
+    it('GET /bookings/export/csv — should filter by date range', async () => {
+      const fromDate = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString();
+      const toDate = new Date().toISOString();
+      const res = await request(app.getHttpServer())
+        .get(`/bookings/export/csv?fromDate=${fromDate}&toDate=${toDate}`)
+        .set('Authorization', `Bearer ${agentToken}`)
+        .expect(200);
+
+      expect(typeof res.body).toBe('string');
+      expect(res.body).toContain('ID,Status');
+    });
+
+    it('GET /bookings/export/csv — admin should export all bookings', async () => {
+      const res = await request(app.getHttpServer())
+        .get('/bookings/export/csv')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .expect(200);
+
+      expect(typeof res.body).toBe('string');
+      expect(res.body).toContain('ID,Status');
+    });
+
+    it('GET /bookings/export/csv — should reject unauthenticated', async () => {
+      await request(app.getHttpServer())
+        .get('/bookings/export/csv')
+        .expect(401);
+    });
+  });
+
+  describe('Audit log filtering', () => {
+    it('GET /audit — should return paginated audit logs', async () => {
+      const res = await request(app.getHttpServer())
+        .get('/audit?limit=5&offset=0')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .expect(200);
+
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.items).toBeDefined();
+      expect(Array.isArray(res.body.data.items)).toBe(true);
+      expect(res.body.data.meta).toBeDefined();
+    });
+
+    it('GET /audit — should filter by action', async () => {
+      const res = await request(app.getHttpServer())
+        .get('/audit?action=auth.login&limit=5')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .expect(200);
+
+      expect(res.body.success).toBe(true);
+      expect(Array.isArray(res.body.data.items)).toBe(true);
+    });
+
+    it('GET /audit — should filter by resource', async () => {
+      const res = await request(app.getHttpServer())
+        .get('/audit?resource=booking&limit=5')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .expect(200);
+
+      expect(res.body.success).toBe(true);
+      expect(Array.isArray(res.body.data.items)).toBe(true);
+    });
+
+    it('GET /audit — should filter by both action and resource', async () => {
+      const res = await request(app.getHttpServer())
+        .get('/audit?action=booking.create&resource=booking&limit=5')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .expect(200);
+
+      expect(res.body.success).toBe(true);
+      expect(Array.isArray(res.body.data.items)).toBe(true);
+    });
+  });
 });

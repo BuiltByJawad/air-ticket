@@ -93,6 +93,32 @@ export class BookingsController {
     return csv;
   }
 
+  @Get('export/pdf')
+  @Roles('agent', 'admin')
+  @Throttle({ default: { ttl: 60_000, limit: 10 } })
+  @ApiOperation({ summary: 'Export bookings as PDF with date range filtering' })
+  async exportPdf(@CurrentUser() user: CurrentUserData, @Query() query: ExportBookingsQueryDto, @Req() req: Request) {
+    const pdfBuffer = await this.bookingsService.exportPdf(user, {
+      agencyId: query.agencyId,
+      status: query.status,
+      fromDate: query.fromDate,
+      toDate: query.toDate
+    });
+
+    await this.auditService.log({
+      action: 'booking.export_pdf',
+      resource: 'booking',
+      agencyId: user.agencyId,
+      userId: user.sub,
+      requestId: req.requestId,
+      metadata: { status: query.status, fromDate: query.fromDate, toDate: query.toDate }
+    });
+
+    req.res?.setHeader('Content-Type', 'application/pdf');
+    req.res?.setHeader('Content-Disposition', `attachment; filename=bookings-${new Date().toISOString().slice(0, 10)}.pdf`);
+    req.res?.send(pdfBuffer);
+  }
+
   @Get(':id')
   @Roles('agent', 'admin')
   @Throttle({ default: { ttl: 60_000, limit: 60 } })

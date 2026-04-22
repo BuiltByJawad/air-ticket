@@ -1,11 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import { Download } from 'lucide-react';
+import { Download, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { exportBookingsCsvAction } from '../actions';
+import { exportBookingsCsvAction, exportBookingsPdfAction } from '../actions';
 
 interface BookingExportProps {
   status?: string;
@@ -14,10 +14,10 @@ interface BookingExportProps {
 export function BookingExport({ status }: BookingExportProps) {
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState<string | null>(null);
 
-  async function handleExport() {
-    setLoading(true);
+  async function handleExportCsv() {
+    setLoading('csv');
     try {
       const result = await exportBookingsCsvAction({
         status,
@@ -28,19 +28,46 @@ export function BookingExport({ status }: BookingExportProps) {
       if (!result) return;
 
       const blob = new Blob([result.csv], { type: 'text/csv' });
-      const downloadUrl = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = downloadUrl;
-      a.download = result.filename;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(downloadUrl);
+      downloadBlob(blob, result.filename);
     } catch {
-      // silently fail - could add toast notification later
+      // silently fail
     } finally {
-      setLoading(false);
+      setLoading(null);
     }
+  }
+
+  async function handleExportPdf() {
+    setLoading('pdf');
+    try {
+      const result = await exportBookingsPdfAction({
+        status,
+        fromDate: fromDate || undefined,
+        toDate: toDate ? new Date(toDate + 'T23:59:59').toISOString() : undefined
+      });
+
+      if (!result) return;
+
+      const binary = atob(result.base64);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+      const blob = new Blob([bytes], { type: 'application/pdf' });
+      downloadBlob(blob, result.filename);
+    } catch {
+      // silently fail
+    } finally {
+      setLoading(null);
+    }
+  }
+
+  function downloadBlob(blob: Blob, filename: string) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   }
 
   return (
@@ -65,9 +92,13 @@ export function BookingExport({ status }: BookingExportProps) {
           className="h-9 text-sm"
         />
       </div>
-      <Button size="sm" variant="outline" className="gap-1 h-9" onClick={handleExport} disabled={loading}>
+      <Button size="sm" variant="outline" className="gap-1 h-9" onClick={handleExportCsv} disabled={loading !== null}>
         <Download className="h-4 w-4" />
-        {loading ? 'Exporting...' : 'Export CSV'}
+        {loading === 'csv' ? 'Exporting...' : 'CSV'}
+      </Button>
+      <Button size="sm" variant="outline" className="gap-1 h-9" onClick={handleExportPdf} disabled={loading !== null}>
+        <FileText className="h-4 w-4" />
+        {loading === 'pdf' ? 'Exporting...' : 'PDF'}
       </Button>
     </div>
   );

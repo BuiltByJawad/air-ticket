@@ -1,32 +1,44 @@
-import { BookOpen, Plane, TrendingUp, DollarSign, PlaneTakeoff, Calendar } from 'lucide-react';
+import { BookOpen, Plane, TrendingUp, DollarSign, PlaneTakeoff, Calendar, Activity } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { listBookingsPaged } from '@/lib/api/api-client';
+import { getAgentStats, listBookingsPaged } from '@/lib/api/api-client';
 import { getSessionToken } from '@/lib/auth/session';
 import Link from 'next/link';
 
-const STATS_LIMIT = 100;
-
 export default async function DashboardHomePage() {
   const token = await getSessionToken();
-  let totalBookings = 0;
-  let confirmedBookings = 0;
-  let totalRevenue = 0;
-  let currency = 'USD';
-  let recentBookings: Awaited<ReturnType<typeof listBookingsPaged>>['items'] = [];
 
+  const stats = token
+    ? await getAgentStats(token).catch(() => ({
+        totalBookings: 0,
+        bookingsByStatus: { draft: 0, confirmed: 0, cancelled: 0 },
+        totalRevenue: '0.00',
+        revenueCurrency: 'USD',
+        recentBookingsCount: 0,
+        monthlyRevenue: []
+      }))
+    : {
+        totalBookings: 0,
+        bookingsByStatus: { draft: 0, confirmed: 0, cancelled: 0 },
+        totalRevenue: '0.00',
+        revenueCurrency: 'USD',
+        recentBookingsCount: 0,
+        monthlyRevenue: []
+      };
+
+  let recentBookings: Awaited<ReturnType<typeof listBookingsPaged>>['items'] = [];
   if (token) {
     try {
-      const result = await listBookingsPaged(token, { limit: STATS_LIMIT, offset: 0 });
-      totalBookings = result.meta.total;
-      confirmedBookings = result.items.filter((b) => b.status === 'confirmed').length;
-      totalRevenue = result.items.reduce((sum, b) => sum + parseFloat(b.totalPrice.amount), 0);
-      currency = result.items[0]?.totalPrice.currency ?? 'USD';
-      recentBookings = result.items.slice(0, 5);
+      const result = await listBookingsPaged(token, { limit: 5, offset: 0 });
+      recentBookings = result.items;
     } catch {
-      // stats will remain defaults
+      // recent bookings will remain empty
     }
   }
+
+  const { totalBookings, bookingsByStatus, totalRevenue, revenueCurrency, recentBookingsCount, monthlyRevenue } = stats;
+  const avgValue = totalBookings > 0 ? (parseFloat(totalRevenue) / totalBookings).toFixed(2) : '0.00';
+  const statusTotal = bookingsByStatus.draft + bookingsByStatus.confirmed + bookingsByStatus.cancelled;
 
   return (
     <div className="space-y-6">
@@ -51,6 +63,7 @@ export default async function DashboardHomePage() {
           </CardHeader>
           <CardContent>
             <div className="text-xl font-bold sm:text-2xl truncate">{totalBookings}</div>
+            <p className="text-xs text-muted-foreground mt-1">{recentBookingsCount} in last 30 days</p>
           </CardContent>
         </Card>
 
@@ -60,7 +73,32 @@ export default async function DashboardHomePage() {
             <Plane className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-xl font-bold sm:text-2xl">{confirmedBookings}</div>
+            <div className="text-xl font-bold sm:text-2xl">{bookingsByStatus.confirmed}</div>
+            {statusTotal > 0 && (
+              <div className="mt-2 space-y-1">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-muted-foreground">Draft</span>
+                  <span>{Math.round((bookingsByStatus.draft / statusTotal) * 100)}%</span>
+                </div>
+                <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                  <div className="h-full rounded-full bg-yellow-500" style={{ width: `${(bookingsByStatus.draft / statusTotal) * 100}%` }} />
+                </div>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-muted-foreground">Confirmed</span>
+                  <span>{Math.round((bookingsByStatus.confirmed / statusTotal) * 100)}%</span>
+                </div>
+                <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                  <div className="h-full rounded-full bg-green-500" style={{ width: `${(bookingsByStatus.confirmed / statusTotal) * 100}%` }} />
+                </div>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-muted-foreground">Cancelled</span>
+                  <span>{Math.round((bookingsByStatus.cancelled / statusTotal) * 100)}%</span>
+                </div>
+                <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                  <div className="h-full rounded-full bg-red-500" style={{ width: `${(bookingsByStatus.cancelled / statusTotal) * 100}%` }} />
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -70,7 +108,7 @@ export default async function DashboardHomePage() {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-xl font-bold sm:text-2xl truncate">{currency} {totalRevenue.toFixed(2)}</div>
+            <div className="text-xl font-bold sm:text-2xl truncate">{revenueCurrency} {totalRevenue}</div>
           </CardContent>
         </Card>
 
@@ -80,12 +118,40 @@ export default async function DashboardHomePage() {
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-xl font-bold sm:text-2xl">
-              <span className="truncate">{currency} {totalBookings > 0 ? (totalRevenue / totalBookings).toFixed(2) : '0.00'}</span>
-            </div>
+            <div className="text-xl font-bold sm:text-2xl truncate">{revenueCurrency} {avgValue}</div>
           </CardContent>
         </Card>
       </div>
+
+      {monthlyRevenue.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Activity className="h-5 w-5" />
+              Monthly Revenue (Last 6 Months)
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {monthlyRevenue.map((m) => {
+                const maxRev = Math.max(...monthlyRevenue.map((x) => parseFloat(x.revenue)), 1);
+                const pct = (parseFloat(m.revenue) / maxRev) * 100;
+                return (
+                  <div key={m.month} className="space-y-1">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="font-medium">{m.month}</span>
+                      <span className="text-muted-foreground">{revenueCurrency} {m.revenue} ({m.bookingCount} bookings)</span>
+                    </div>
+                    <div className="h-2 rounded-full bg-muted overflow-hidden">
+                      <div className="h-full rounded-full bg-primary" style={{ width: `${pct}%` }} />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader>
@@ -104,7 +170,7 @@ export default async function DashboardHomePage() {
           ) : (
             <div className="space-y-3">
               {recentBookings.map((b) => (
-                <div key={b.id} className="flex flex-col sm:flex-row sm:items-center justify-between rounded-lg border p-3 sm:p-4 gap-2">
+                <Link key={b.id} href={`/bookings/${b.id}`} className="flex flex-col sm:flex-row sm:items-center justify-between rounded-lg border p-3 sm:p-4 gap-2 hover:bg-accent transition-colors">
                   <div className="space-y-1">
                     <p className="text-sm font-semibold">{b.offerId}</p>
                     <p className="text-xs text-muted-foreground">
@@ -117,7 +183,7 @@ export default async function DashboardHomePage() {
                     </span>
                     <StatusBadge status={b.status} />
                   </div>
-                </div>
+                </Link>
               ))}
             </div>
           )}

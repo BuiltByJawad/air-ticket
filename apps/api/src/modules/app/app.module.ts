@@ -3,6 +3,7 @@ import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { HealthController } from './health.controller';
 import { AdminStatsController } from './controllers/admin-stats.controller';
+import { AgentStatsController } from './controllers/agent-stats.controller';
 import { AuthModule } from '../auth/auth.module';
 import { PrismaModule } from '../prisma/prisma.module';
 import { AgenciesModule } from '../agencies/agencies.module';
@@ -24,7 +25,7 @@ import { RolesGuard } from '../auth/roles.guard';
     BookingsModule,
     AuditModule
   ],
-  controllers: [HealthController, AdminStatsController],
+  controllers: [HealthController, AdminStatsController, AgentStatsController],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },
     { provide: APP_GUARD, useClass: JwtAuthGuard },
