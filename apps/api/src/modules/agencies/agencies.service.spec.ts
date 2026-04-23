@@ -18,6 +18,9 @@ describe('AgenciesService', () => {
       count: jest.Mock;
       findMany: jest.Mock;
     };
+    user: {
+      count: jest.Mock;
+    };
   };
 
   beforeEach(async () => {
@@ -33,6 +36,9 @@ describe('AgenciesService', () => {
       booking: {
         count: jest.fn(),
         findMany: jest.fn()
+      },
+      user: {
+        count: jest.fn()
       }
     };
 
@@ -59,7 +65,9 @@ describe('AgenciesService', () => {
           users: {
             where: { role: 'agent' },
             select: { id: true, email: true, name: true, createdAt: true },
-            orderBy: { createdAt: 'desc' }
+            orderBy: { createdAt: 'desc' },
+            skip: 0,
+            take: 20
           }
         }
       });
@@ -77,6 +85,7 @@ describe('AgenciesService', () => {
       };
 
       prisma.agency.findUnique.mockResolvedValue(agencyRow);
+      prisma.user.count.mockResolvedValue(2);
       prisma.booking.count.mockResolvedValue(10);
       prisma.booking.findMany.mockResolvedValue([
         { currency: 'USD', amount: '500.00' },
@@ -91,6 +100,7 @@ describe('AgenciesService', () => {
         name: 'Test Agency',
         createdAt: agencyRow.createdAt,
         agents: agencyRow.users,
+        agentsTotal: 2,
         bookingsCount: 10,
         confirmedRevenue: '800.00',
         revenueCurrency: 'USD'
@@ -112,6 +122,7 @@ describe('AgenciesService', () => {
       };
 
       prisma.agency.findUnique.mockResolvedValue(agencyRow);
+      prisma.user.count.mockResolvedValue(0);
       prisma.booking.count.mockResolvedValue(5);
       prisma.booking.findMany.mockResolvedValue([
         { currency: 'USD', amount: '200.00' },
@@ -125,6 +136,7 @@ describe('AgenciesService', () => {
         name: 'Euro Agency',
         createdAt: agencyRow.createdAt,
         agents: [],
+        agentsTotal: 0,
         bookingsCount: 5,
         confirmedRevenue: '500.00',
         revenueCurrency: 'EUR'
@@ -140,6 +152,7 @@ describe('AgenciesService', () => {
       };
 
       prisma.agency.findUnique.mockResolvedValue(agencyRow);
+      prisma.user.count.mockResolvedValue(0);
       prisma.booking.count.mockResolvedValue(0);
       prisma.booking.findMany.mockResolvedValue([]);
 
@@ -150,6 +163,7 @@ describe('AgenciesService', () => {
         name: 'Empty Agency',
         createdAt: agencyRow.createdAt,
         agents: [],
+        agentsTotal: 0,
         bookingsCount: 0,
         confirmedRevenue: '0.00',
         revenueCurrency: 'USD'
