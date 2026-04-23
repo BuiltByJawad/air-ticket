@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Patch, Post, Query, Req } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, HttpStatus, NotFoundException, Param, Patch, Post, Query, Req } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import type { Request } from 'express';
@@ -37,6 +37,18 @@ export class AdminUsersController {
     const limit = query.limit ?? 20;
     const offset = query.offset ?? 0;
     return this.usersService.listAllPaged({ limit, offset, role: query.role, search: query.search });
+  }
+
+  @Get(':id/detail')
+  @ApiOperation({ summary: 'Get user detail with agency and booking stats' })
+  @ApiResponse({ status: HttpStatus.OK, description: 'User detail returned' })
+  @Throttle({ default: { ttl: 60_000, limit: 60 } })
+  async getDetail(@Param('id') id: string) {
+    const result = await this.usersService.getDetail(id);
+    if (!result) {
+      throw new NotFoundException('User not found');
+    }
+    return result;
   }
 
   @Post('agents')

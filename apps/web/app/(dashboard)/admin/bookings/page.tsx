@@ -5,8 +5,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { PaginationControls } from '@/components/shared/pagination-controls';
 import { BookingStatusFilter } from '@/components/shared/booking-status-filter';
+import { SearchFilter } from '@/components/shared/search-filter';
 import { BookingActions } from './components/booking-actions';
 import { BookingExport } from '@/components/shared/booking-export';
+import { BookingDateFilter } from './components/booking-date-filter';
 import { exportBookingsCsvAction, exportBookingsPdfAction } from './actions';
 import Link from 'next/link';
 
@@ -24,8 +26,11 @@ export default async function AdminBookingsPage({
   const limit = Number(sp.limit) || DEFAULT_LIMIT;
   const offset = Number(sp.offset) || 0;
   const status = typeof sp.status === 'string' ? (sp.status as 'draft' | 'confirmed' | 'cancelled') : undefined;
+  const search = typeof sp.search === 'string' ? sp.search : undefined;
+  const fromDate = typeof sp.fromDate === 'string' ? sp.fromDate : undefined;
+  const toDate = typeof sp.toDate === 'string' ? sp.toDate : undefined;
 
-  const result = await listBookingsPaged(token, { limit, offset, status }).catch(() => ({
+  const result = await listBookingsPaged(token, { limit, offset, status, search, fromDate, toDate }).catch(() => ({
     items: [],
     meta: { total: 0, limit, offset }
   }));
@@ -38,7 +43,11 @@ export default async function AdminBookingsPage({
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <BookingStatusFilter basePath="/admin/bookings" currentStatus={status} />
+        <div className="flex flex-wrap items-center gap-3">
+          <BookingStatusFilter basePath="/admin/bookings" currentStatus={status} />
+          <SearchFilter basePath="/admin/bookings" param="search" placeholder="Search offer ID..." />
+          <BookingDateFilter basePath="/admin/bookings" fromDate={fromDate} toDate={toDate} />
+        </div>
         <BookingExport
           status={status}
           onExportCsv={exportBookingsCsvAction}
@@ -80,7 +89,7 @@ export default async function AdminBookingsPage({
               ))}
             </div>
           )}
-          <PaginationControls basePath="/admin/bookings" meta={result.meta} params={{ status }} />
+          <PaginationControls basePath="/admin/bookings" meta={result.meta} params={{ status, search, fromDate, toDate }} />
         </CardContent>
       </Card>
     </div>

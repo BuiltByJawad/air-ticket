@@ -62,6 +62,9 @@ export class BookingsController {
     return this.bookingsService.listPagedForUser(user, {
       agencyId: query.agencyId,
       status: query.status,
+      search: query.search,
+      fromDate: query.fromDate,
+      toDate: query.toDate,
       limit,
       offset
     });

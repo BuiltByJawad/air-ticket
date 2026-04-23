@@ -14,6 +14,22 @@ export class ListBookingsQueryDto {
   @IsIn(['draft', 'confirmed', 'cancelled'])
   status?: 'draft' | 'confirmed' | 'cancelled';
 
+  @ApiPropertyOptional({ example: 'offer-123' })
+  @IsString()
+  @IsOptional()
+  @MinLength(1)
+  search?: string;
+
+  @ApiPropertyOptional({ example: '2025-01-01' })
+  @IsString()
+  @IsOptional()
+  fromDate?: string;
+
+  @ApiPropertyOptional({ example: '2025-12-31' })
+  @IsString()
+  @IsOptional()
+  toDate?: string;
+
   @ApiPropertyOptional({ example: 20, minimum: 1, maximum: 100 })
   @IsOptional()
   @Type(() => Number)

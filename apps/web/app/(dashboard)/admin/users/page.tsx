@@ -8,6 +8,7 @@ import { SearchFilter } from '@/components/shared/search-filter';
 import { RoleFilter } from '@/components/shared/role-filter';
 import { UserActions } from './components/user-actions';
 import { CreateAgentForm } from './components/create-agent-form';
+import Link from 'next/link';
 
 const DEFAULT_LIMIT = 20;
 
@@ -65,10 +66,10 @@ export default async function AdminUsersPage({
             <div className="space-y-3">
               {result.items.map((u) => (
                 <div key={u.id} className="flex items-center justify-between rounded-lg border p-3">
-                  <div className="min-w-0">
+                  <Link href={`/admin/users/${u.id}`} className="min-w-0 hover:bg-accent transition-colors -m-3 p-3 flex-1">
                     <p className="font-medium text-sm truncate">{u.name || u.email}</p>
                     <p className="text-xs text-muted-foreground truncate">{u.email}</p>
-                  </div>
+                  </Link>
                   <div className="flex items-center gap-2 shrink-0">
                     <Badge variant={u.role === 'admin' ? 'default' : 'secondary'} className="capitalize text-xs">
                       {u.role}

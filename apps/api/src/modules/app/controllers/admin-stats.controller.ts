@@ -17,6 +17,12 @@ interface AgencyRevenue {
   bookingCount: number;
 }
 
+interface MonthlyRevenue {
+  month: string;
+  revenue: string;
+  bookingCount: number;
+}
+
 interface AdminStats {
   totalAgencies: number;
   totalUsers: number;
@@ -27,6 +33,7 @@ interface AdminStats {
   revenueCurrency: string;
   topAgencies: AgencyRevenue[];
   recentBookingsCount: number;
+  monthlyRevenue: MonthlyRevenue[];
 }
 
 @ApiTags('Admin - Stats')
@@ -41,6 +48,11 @@ export class AdminStatsController {
   @ApiResponse({ status: HttpStatus.OK, description: 'Admin stats returned' })
   @Throttle({ default: { ttl: 60_000, limit: 60 } })
   async getStats(): Promise<AdminStats> {
+    const sixMonthsAgo = new Date();
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+    sixMonthsAgo.setDate(1);
+    sixMonthsAgo.setHours(0, 0, 0, 0);
+
     const [totalAgencies, totalUsers, totalAgents, bookingsByStatus, confirmedBookings, thirtyDaysAgo] = await Promise.all([
       this.prisma.agency.count(),
       this.prisma.user.count(),
@@ -110,6 +122,35 @@ export class AdminStatsController {
       .sort((a, b) => parseFloat(b.revenue) - parseFloat(a.revenue))
       .slice(0, 5);
 
+    // Monthly revenue for last 6 months (primary currency only)
+    const monthlyRevenue: MonthlyRevenue[] = [];
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date();
+      d.setMonth(d.getMonth() - i);
+      const year = d.getFullYear();
+      const month = d.getMonth();
+      const label = d.toLocaleString('en-US', { month: 'short', year: 'numeric' });
+
+      const start = new Date(year, month, 1);
+      const end = new Date(year, month + 1, 1);
+
+      const monthBookings = await this.prisma.booking.findMany({
+        where: {
+          status: 'confirmed',
+          currency: primaryCurrency,
+          createdAt: { gte: start, lt: end }
+        },
+        select: { amount: true }
+      });
+
+      const rev = monthBookings.reduce((sum, b) => sum + (parseFloat(b.amount) || 0), 0);
+      monthlyRevenue.push({
+        month: label,
+        revenue: rev.toFixed(2),
+        bookingCount: monthBookings.length
+      });
+    }
+
     return {
       totalAgencies,
       totalUsers,
@@ -119,7 +160,8 @@ export class AdminStatsController {
       totalRevenue: (revenueByCurrency.get(primaryCurrency) ?? 0).toFixed(2),
       revenueCurrency: primaryCurrency,
       topAgencies,
-      recentBookingsCount: thirtyDaysAgo
+      recentBookingsCount: thirtyDaysAgo,
+      monthlyRevenue
     };
   }
 }

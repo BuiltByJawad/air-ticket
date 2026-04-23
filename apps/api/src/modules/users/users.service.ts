@@ -150,6 +150,72 @@ export class UsersService {
     };
   }
 
+  async getDetail(id: string): Promise<{
+    id: string;
+    email: string;
+    name: string | null;
+    phone: string | null;
+    role: UserRole;
+    agencyId: string | null;
+    agencyName: string | null;
+    createdAt: Date;
+    bookingsCount: number;
+    confirmedRevenue: string;
+    revenueCurrency: string;
+  } | null> {
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+      select: { id: true, email: true, name: true, phone: true, role: true, agencyId: true, createdAt: true, agency: { select: { name: true } } }
+    });
+
+    if (!user) return null;
+
+    let bookingsCount = 0;
+    let confirmedRevenue = '0.00';
+    let revenueCurrency = 'USD';
+
+    if (user.agencyId) {
+      const [count, confirmedBookings] = await Promise.all([
+        this.prisma.booking.count({ where: { agencyId: user.agencyId, createdByUserId: id } }),
+        this.prisma.booking.findMany({
+          where: { agencyId: user.agencyId, createdByUserId: id, status: 'confirmed' },
+          select: { currency: true, amount: true }
+        })
+      ]);
+
+      bookingsCount = count;
+
+      const revenueByCurrency = new Map<string, number>();
+      for (const b of confirmedBookings) {
+        const amount = parseFloat(b.amount) || 0;
+        revenueByCurrency.set(b.currency, (revenueByCurrency.get(b.currency) ?? 0) + amount);
+      }
+
+      let maxRevenue = 0;
+      for (const [currency, rev] of revenueByCurrency) {
+        if (rev > maxRevenue) {
+          maxRevenue = rev;
+          revenueCurrency = currency;
+        }
+      }
+      confirmedRevenue = (revenueByCurrency.get(revenueCurrency) ?? 0).toFixed(2);
+    }
+
+    return {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      phone: user.phone,
+      role: user.role,
+      agencyId: user.agencyId,
+      agencyName: user.agency?.name ?? null,
+      createdAt: user.createdAt,
+      bookingsCount,
+      confirmedRevenue,
+      revenueCurrency
+    };
+  }
+
   async update(id: string, input: { name?: string; phone?: string; agencyId?: string | null }): Promise<UserPublic> {
     const existing = await this.prisma.user.findUnique({ where: { id } });
     if (!existing) {

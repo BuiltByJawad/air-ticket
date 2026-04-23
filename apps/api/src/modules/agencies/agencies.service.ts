@@ -42,11 +42,12 @@ export class AgenciesService {
     };
   }
 
-  async getDetail(id: string): Promise<{
+  async getDetail(id: string, agentLimit = 20, agentOffset = 0): Promise<{
     id: string;
     name: string;
     createdAt: Date;
     agents: { id: string; email: string; name: string | null; createdAt: Date }[];
+    agentsTotal: number;
     bookingsCount: number;
     confirmedRevenue: string;
     revenueCurrency: string;
@@ -57,14 +58,17 @@ export class AgenciesService {
         users: {
           where: { role: 'agent' },
           select: { id: true, email: true, name: true, createdAt: true },
-          orderBy: { createdAt: 'desc' }
+          orderBy: { createdAt: 'desc' },
+          skip: agentOffset,
+          take: agentLimit
         }
       }
     });
 
     if (!agency) return null;
 
-    const [bookingsCount, confirmedBookings] = await Promise.all([
+    const [agentsTotal, bookingsCount, confirmedBookings] = await Promise.all([
+      this.prisma.user.count({ where: { agencyId: id, role: 'agent' } }),
       this.prisma.booking.count({ where: { agencyId: id } }),
       this.prisma.booking.findMany({
         where: { agencyId: id, status: 'confirmed' },
@@ -92,6 +96,7 @@ export class AgenciesService {
       name: agency.name,
       createdAt: agency.createdAt,
       agents: agency.users,
+      agentsTotal,
       bookingsCount,
       confirmedRevenue: (revenueByCurrency.get(primaryCurrency) ?? 0).toFixed(2),
       revenueCurrency: primaryCurrency

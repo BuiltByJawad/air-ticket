@@ -1,6 +1,6 @@
 import { getAdminStats } from '@/lib/api/api-client';
 import { getSessionToken } from '@/lib/auth/session';
-import { Building2, Users, BookOpen, ShieldCheck, DollarSign, TrendingUp, ChevronRight } from 'lucide-react';
+import { Building2, Users, BookOpen, ShieldCheck, DollarSign, TrendingUp, ChevronRight, Activity } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
@@ -18,7 +18,8 @@ export default async function AdminPage() {
     totalRevenue: '0.00',
     revenueCurrency: 'USD',
     topAgencies: [],
-    recentBookingsCount: 0
+    recentBookingsCount: 0,
+    monthlyRevenue: []
   }));
 
   const statusEntries = [
@@ -139,6 +140,36 @@ export default async function AdminPage() {
           </CardContent>
         </Card>
       </div>
+
+      {stats.monthlyRevenue.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Activity className="h-5 w-5" />
+              Monthly Revenue (Last 6 Months)
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {stats.monthlyRevenue.map((m) => {
+                const maxRev = Math.max(...stats.monthlyRevenue.map((x) => parseFloat(x.revenue)), 1);
+                const pct = (parseFloat(m.revenue) / maxRev) * 100;
+                return (
+                  <div key={m.month} className="space-y-1">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="font-medium">{m.month}</span>
+                      <span className="text-muted-foreground">{stats.revenueCurrency} {m.revenue} ({m.bookingCount} bookings)</span>
+                    </div>
+                    <div className="h-2 rounded-full bg-muted overflow-hidden">
+                      <div className="h-full rounded-full bg-primary" style={{ width: `${pct}%` }} />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {stats.topAgencies.length > 0 && (
         <Card>

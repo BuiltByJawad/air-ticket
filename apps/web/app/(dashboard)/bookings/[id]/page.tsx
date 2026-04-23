@@ -39,7 +39,22 @@ interface SegmentData {
   aircraft?: string;
 }
 
+interface TravelerData {
+  id?: string;
+  firstName?: string;
+  lastName?: string;
+  gender?: string;
+  birthDate?: string;
+  email?: string;
+  phone?: string;
+  travelerType?: string;
+}
+
 function isSegmentArray(data: unknown): data is SegmentData[] {
+  return Array.isArray(data) && data.length > 0 && typeof data[0] === 'object' && data[0] !== null;
+}
+
+function isTravelerArray(data: unknown): data is TravelerData[] {
   return Array.isArray(data) && data.length > 0 && typeof data[0] === 'object' && data[0] !== null;
 }
 
@@ -64,6 +79,9 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
   const offerData = booking.offerData as Record<string, unknown> | null;
   const segments: SegmentData[] = isSegmentArray(offerData?.segments)
     ? offerData.segments
+    : [];
+  const travelers: TravelerData[] = isTravelerArray(offerData?.travelers)
+    ? offerData.travelers
     : [];
   const first = segments[0];
   const last = segments[segments.length - 1];
@@ -171,6 +189,39 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
                     {seg.departureTime ? fmtTime(seg.departureTime) : '--'} – {seg.arrivalTime ? fmtTime(seg.arrivalTime) : '--'}
                     {seg.duration ? ` · ${fmtDuration(seg.duration)}` : ''}
                     {seg.aircraft ? ` · ${seg.aircraft}` : ''}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {travelers.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5" />
+              Passengers ({travelers.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {travelers.map((t, idx) => (
+                <div key={t.id ?? idx} className="flex items-center justify-between rounded-lg border p-3">
+                  <div className="min-w-0">
+                    <p className="font-medium text-sm">
+                      {t.firstName || t.lastName ? `${t.firstName ?? ''} ${t.lastName ?? ''}`.trim() : `Passenger ${idx + 1}`}
+                    </p>
+                    <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                      {t.travelerType && <span className="capitalize">{t.travelerType}</span>}
+                      {t.gender && <span>{t.gender}</span>}
+                      {t.birthDate && <span>{new Date(t.birthDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>}
+                    </div>
+                  </div>
+                  <div className="text-xs text-muted-foreground text-right">
+                    {t.email && <p className="truncate max-w-[200px]">{t.email}</p>}
+                    {t.phone && <p>{t.phone}</p>}
                   </div>
                 </div>
               ))}

@@ -7,6 +7,7 @@ interface PaginationControlsProps {
   basePath: string;
   meta: PaginationMeta;
   params?: Record<string, string | undefined>;
+  offsetKey?: string;
 }
 
 function buildHref(basePath: string, params: URLSearchParams): string {
@@ -14,7 +15,7 @@ function buildHref(basePath: string, params: URLSearchParams): string {
   return q ? `${basePath}?${q}` : basePath;
 }
 
-export function PaginationControls({ basePath, meta, params }: PaginationControlsProps) {
+export function PaginationControls({ basePath, meta, params, offsetKey = 'offset' }: PaginationControlsProps) {
   const hasPrev = meta.offset > 0;
   const hasNext = meta.offset + meta.limit < meta.total;
 
@@ -31,9 +32,9 @@ export function PaginationControls({ basePath, meta, params }: PaginationControl
   const nextOffset = meta.offset + meta.limit;
 
   const prevParams = new URLSearchParams(baseParams);
-  prevParams.set('offset', String(prevOffset));
+  prevParams.set(offsetKey, String(prevOffset));
   const nextParams = new URLSearchParams(baseParams);
-  nextParams.set('offset', String(nextOffset));
+  nextParams.set(offsetKey, String(nextOffset));
 
   const page = Math.floor(meta.offset / meta.limit) + 1;
   const totalPages = meta.limit > 0 ? Math.max(1, Math.ceil(meta.total / meta.limit)) : 1;

@@ -322,6 +322,9 @@ export async function listBookingsPaged(
   input?: {
     agencyId?: string;
     status?: 'draft' | 'confirmed' | 'cancelled';
+    search?: string;
+    fromDate?: string;
+    toDate?: string;
     limit?: number;
     offset?: number;
   }
@@ -329,6 +332,9 @@ export async function listBookingsPaged(
   const params = new URLSearchParams();
   if (input?.agencyId) params.set('agencyId', input.agencyId);
   if (input?.status) params.set('status', input.status);
+  if (input?.search) params.set('search', input.search);
+  if (input?.fromDate) params.set('fromDate', input.fromDate);
+  if (input?.toDate) params.set('toDate', input.toDate);
   if (input?.limit !== undefined) params.set('limit', String(input.limit));
   if (input?.offset !== undefined) params.set('offset', String(input.offset));
 
@@ -587,6 +593,7 @@ export interface AdminStats {
   revenueCurrency: string;
   topAgencies: { agencyId: string; agencyName: string; revenue: string; bookingCount: number }[];
   recentBookingsCount: number;
+  monthlyRevenue: { month: string; revenue: string; bookingCount: number }[];
 }
 
 export async function getAdminStats(accessToken: string): Promise<AdminStats> {
@@ -621,18 +628,46 @@ export interface AgencyDetail {
   name: string;
   createdAt: string;
   agents: { id: string; email: string; name: string | null; createdAt: string }[];
+  agentsTotal: number;
   bookingsCount: number;
   confirmedRevenue: string;
   revenueCurrency: string;
 }
 
-export async function getAgencyDetail(accessToken: string, id: string): Promise<AgencyDetail> {
-  const res = await apiFetch(`/admin/agencies/${encodeURIComponent(id)}/detail`, {
+export async function getAgencyDetail(accessToken: string, id: string, agentLimit?: number, agentOffset?: number): Promise<AgencyDetail> {
+  const params = new URLSearchParams();
+  if (agentLimit !== undefined) params.set('agentLimit', String(agentLimit));
+  if (agentOffset !== undefined) params.set('agentOffset', String(agentOffset));
+  const qs = params.toString();
+  const res = await apiFetch(`/admin/agencies/${encodeURIComponent(id)}/detail${qs ? `?${qs}` : ''}`, {
     method: 'GET',
     headers: { Authorization: `Bearer ${accessToken}` }
   });
   if (!res.ok) throw await toApiError(res, 'Failed to get agency detail');
   return parseApiResponse<AgencyDetail>(res);
+}
+
+export interface UserDetail {
+  id: string;
+  email: string;
+  name: string | null;
+  phone: string | null;
+  role: string;
+  agencyId: string | null;
+  agencyName: string | null;
+  createdAt: string;
+  bookingsCount: number;
+  confirmedRevenue: string;
+  revenueCurrency: string;
+}
+
+export async function getUserDetail(accessToken: string, id: string): Promise<UserDetail> {
+  const res = await apiFetch(`/admin/users/${encodeURIComponent(id)}/detail`, {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${accessToken}` }
+  });
+  if (!res.ok) throw await toApiError(res, 'Failed to get user detail');
+  return parseApiResponse<UserDetail>(res);
 }
 
 export async function forgotPassword(email: string): Promise<{ message: string; token?: string }> {

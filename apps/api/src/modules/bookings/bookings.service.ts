@@ -43,12 +43,24 @@ export class BookingsService {
     input: {
       agencyId?: string;
       status?: 'draft' | 'confirmed' | 'cancelled';
+      search?: string;
+      fromDate?: string;
+      toDate?: string;
       limit: number;
       offset: number;
     }
   ): Promise<PaginatedResult<Booking>> {
     const limit = input.limit;
     const offset = input.offset;
+
+    const dateFilter: Prisma.BookingWhereInput = {
+      ...(input.fromDate ? { createdAt: { gte: new Date(input.fromDate) } } : {}),
+      ...(input.toDate ? { createdAt: { lte: new Date(input.toDate) } } : {})
+    };
+
+    const searchFilter: Prisma.BookingWhereInput = input.search
+      ? { offerId: { contains: input.search, mode: 'insensitive' } }
+      : {};
 
     if (user.role === 'agent') {
       if (!user.agencyId) {
@@ -57,7 +69,9 @@ export class BookingsService {
 
       const where: Prisma.BookingWhereInput = {
         agencyId: user.agencyId,
-        ...(input.status ? { status: input.status } : {})
+        ...(input.status ? { status: input.status } : {}),
+        ...dateFilter,
+        ...searchFilter
       };
 
       const [total, rows] = await Promise.all([
@@ -78,7 +92,9 @@ export class BookingsService {
 
     const where: Prisma.BookingWhereInput = {
       ...(input.agencyId ? { agencyId: input.agencyId } : {}),
-      ...(input.status ? { status: input.status } : {})
+      ...(input.status ? { status: input.status } : {}),
+      ...dateFilter,
+      ...searchFilter
     };
 
     const [total, rows] = await Promise.all([

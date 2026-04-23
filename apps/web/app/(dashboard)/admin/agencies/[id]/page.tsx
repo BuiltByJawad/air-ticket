@@ -3,15 +3,27 @@ import { getSessionToken } from '@/lib/auth/session';
 import { Building2, Users, BookOpen, DollarSign, ArrowLeft, Mail } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { PaginationControls } from '@/components/shared/pagination-controls';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
-export default async function AgencyDetailPage({ params }: { params: Promise<{ id: string }> }) {
+const AGENT_LIMIT = 20;
+
+export default async function AgencyDetailPage({
+  params,
+  searchParams
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
   const token = await getSessionToken();
   if (!token) return null;
 
   const { id } = await params;
-  const agency = await getAgencyDetail(token, id).catch(() => null);
+  const sp = await searchParams;
+  const agentOffset = Number(sp.agentOffset) || 0;
+
+  const agency = await getAgencyDetail(token, id, AGENT_LIMIT, agentOffset).catch(() => null);
 
   if (!agency) notFound();
 
@@ -34,7 +46,7 @@ export default async function AgencyDetailPage({ params }: { params: Promise<{ i
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{agency.agents.length}</div>
+            <div className="text-2xl font-bold">{agency.agentsTotal}</div>
           </CardContent>
         </Card>
 
@@ -91,6 +103,11 @@ export default async function AgencyDetailPage({ params }: { params: Promise<{ i
               ))}
             </div>
           )}
+          <PaginationControls
+            basePath={`/admin/agencies/${id}`}
+            meta={{ total: agency.agentsTotal, limit: AGENT_LIMIT, offset: agentOffset }}
+            offsetKey="agentOffset"
+          />
         </CardContent>
       </Card>
 

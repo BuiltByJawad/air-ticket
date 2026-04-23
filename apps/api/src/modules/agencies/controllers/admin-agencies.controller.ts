@@ -43,8 +43,10 @@ export class AdminAgenciesController {
   @ApiOperation({ summary: 'Get agency detail with agents and stats' })
   @ApiResponse({ status: HttpStatus.OK, description: 'Agency detail returned' })
   @Throttle({ default: { ttl: 60_000, limit: 60 } })
-  async getDetail(@Param('id') id: string) {
-    const result = await this.agenciesService.getDetail(id);
+  async getDetail(@Param('id') id: string, @Query('agentLimit') agentLimit?: string, @Query('agentOffset') agentOffset?: string) {
+    const limit = agentLimit ? parseInt(agentLimit, 10) : 20;
+    const offset = agentOffset ? parseInt(agentOffset, 10) : 0;
+    const result = await this.agenciesService.getDetail(id, limit, offset);
     if (!result) {
       throw new NotFoundException('Agency not found');
     }
