@@ -16,6 +16,7 @@ export async function loginAction(formData: FormData): Promise<void> {
   try {
     const token = await loginWithPassword({ email, password });
     await setSessionToken(token.accessToken);
+    redirect(token.user.role === 'admin' ? '/admin' : '/dashboard');
   } catch (err: unknown) {
     if (err instanceof ApiError) {
       if (err.status === 401) {

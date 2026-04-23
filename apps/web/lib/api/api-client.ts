@@ -7,6 +7,12 @@ interface ApiEnvelope<T> {
 
 export interface AuthTokenResponse {
   accessToken: string;
+  user: {
+    id: string;
+    email: string;
+    role: string;
+    agencyId: string | null;
+  };
 }
 
 export interface MeResponse {

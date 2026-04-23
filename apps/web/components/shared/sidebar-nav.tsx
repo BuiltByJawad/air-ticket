@@ -10,7 +10,9 @@ import {
   Menu,
   X,
   UserCircle,
-  Shield
+  Building2,
+  Users,
+  ShieldCheck
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
@@ -25,26 +27,34 @@ type NavUser = {
   agency?: { id: string; name: string } | null;
 };
 
-const baseNavItems = [
+const agentNavItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/flights', label: 'Flights', icon: Plane },
   { href: '/bookings', label: 'Bookings', icon: BookOpen },
   { href: '/profile', label: 'Profile', icon: UserCircle }
 ];
 
-const adminNavItem = { href: '/admin', label: 'Admin', icon: Shield };
+const adminNavItems = [
+  { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/admin/agencies', label: 'Agencies', icon: Building2 },
+  { href: '/admin/users', label: 'Users', icon: Users },
+  { href: '/admin/bookings', label: 'Bookings', icon: BookOpen },
+  { href: '/admin/audit', label: 'Audit Logs', icon: ShieldCheck },
+  { href: '/profile', label: 'Profile', icon: UserCircle }
+];
 
 export function SidebarNav({ user }: { user: NavUser }) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  const navItems = user.role === 'admin' ? [...baseNavItems, adminNavItem] : baseNavItems;
+  const navItems = user.role === 'admin' ? adminNavItems : agentNavItems;
+  const homeHref = user.role === 'admin' ? '/admin' : '/dashboard';
 
   return (
     <>
       {/* Mobile header bar */}
       <div className="flex items-center justify-between border-b bg-card p-4 lg:hidden">
-        <Link href="/dashboard" className="flex items-center gap-2 font-bold text-primary">
+        <Link href={homeHref} className="flex items-center gap-2 font-bold text-primary">
           <Plane className="h-6 w-6" />
           <span>AirTicket</span>
         </Link>
@@ -82,11 +92,12 @@ function NavContent({
   onNav?: () => void;
 }) {
   const displayName = user.name || user.email;
-  const navItems = user.role === 'admin' ? [...baseNavItems, adminNavItem] : baseNavItems;
+  const navItems = user.role === 'admin' ? adminNavItems : agentNavItems;
+  const homeHref = user.role === 'admin' ? '/admin' : '/dashboard';
 
   return (
     <>
-      <Link href="/dashboard" className="mb-8 flex items-center gap-2 font-bold text-xl text-primary" onClick={onNav}>
+      <Link href={homeHref} className="mb-8 flex items-center gap-2 font-bold text-xl text-primary" onClick={onNav}>
         <Plane className="h-7 w-7" />
         <span>AirTicket</span>
       </Link>
