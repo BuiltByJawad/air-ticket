@@ -1,6 +1,6 @@
 ﻿import { Search } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { createBooking, quoteFlight, searchFlights } from '@/lib/api/api-client';
+import { ApiError, createBooking, quoteFlight, searchFlights } from '@/lib/api/api-client';
 import { clearSessionToken, getSessionToken } from '@/lib/auth/session';
 import { redirect } from 'next/navigation';
 import { LoadMoreOffers } from './components/load-more-offers';
@@ -42,8 +42,11 @@ export default async function FlightsPage({
       });
       offers = res.offers;
       nextCursor = res.nextCursor;
-    } catch {
-      redirect('/login');
+    } catch (err: unknown) {
+      if (err instanceof ApiError && err.status === 401) {
+        redirect('/login');
+      }
+      // Non-auth errors: show no results
     }
   }
 
@@ -68,9 +71,13 @@ export default async function FlightsPage({
         currency: quote.offer.totalPrice.currency,
         amount: quote.offer.totalPrice.amount
       });
-    } catch {
-      await clearSessionToken();
-      redirect('/login');
+    } catch (err: unknown) {
+      if (err instanceof ApiError && err.status === 401) {
+        await clearSessionToken();
+        redirect('/login');
+      }
+      // Non-auth booking errors: redirect back to flights
+      redirect('/flights');
     }
 
     redirect('/bookings');

@@ -31,8 +31,8 @@ export default async function DashboardHomePage() {
     try {
       const result = await listBookingsPaged(token, { limit: 5, offset: 0 });
       recentBookings = result.items;
-    } catch {
-      // recent bookings will remain empty
+    } catch (err) {
+      console.error('Failed to fetch recent bookings:', err);
     }
   }
 
