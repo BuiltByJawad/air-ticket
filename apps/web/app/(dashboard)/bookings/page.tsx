@@ -7,6 +7,8 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { PaginationControls } from '@/components/shared/pagination-controls';
 import { BookingExport } from '@/components/shared/booking-export';
+import { SearchFilter } from '@/components/shared/search-filter';
+import { BookingDateFilter } from '@/components/shared/booking-date-filter';
 import { exportBookingsCsvAction, exportBookingsPdfAction } from './actions';
 
 function parseStatus(value: string | undefined): 'draft' | 'confirmed' | 'cancelled' | undefined {
@@ -31,20 +33,24 @@ function parsePositiveInt(value: string | undefined): number | undefined {
 export default async function BookingsPage({
   searchParams
 }: {
-  searchParams?: { status?: string; limit?: string; offset?: string };
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const token = await getSessionToken();
   if (!token) {
     redirect('/login');
   }
 
-  const status = parseStatus(searchParams?.status);
-  const limit = parsePositiveInt(searchParams?.limit) ?? 20;
-  const offset = parseNonNegativeInt(searchParams?.offset) ?? 0;
+  const sp = await searchParams;
+  const status = parseStatus(typeof sp.status === 'string' ? sp.status : undefined);
+  const limit = parsePositiveInt(typeof sp.limit === 'string' ? sp.limit : undefined) ?? 20;
+  const offset = parseNonNegativeInt(typeof sp.offset === 'string' ? sp.offset : undefined) ?? 0;
+  const search = typeof sp.search === 'string' ? sp.search : undefined;
+  const fromDate = typeof sp.fromDate === 'string' ? sp.fromDate : undefined;
+  const toDate = typeof sp.toDate === 'string' ? sp.toDate : undefined;
 
   let bookings: Awaited<ReturnType<typeof listBookingsPaged>> = { items: [], meta: { total: 0, limit, offset } };
   try {
-    bookings = await listBookingsPaged(token, { status, limit, offset });
+    bookings = await listBookingsPaged(token, { status, search, fromDate, toDate, limit, offset });
   } catch (err: unknown) {
     if (err instanceof ApiError && err.status === 401) {
       redirect('/login');
@@ -72,7 +78,7 @@ export default async function BookingsPage({
       </div>
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <span className="text-sm text-muted-foreground">Status:</span>
           <Link
             href={`/bookings?${new URLSearchParams({ limit: String(limit) }).toString()}`}
@@ -97,6 +103,8 @@ export default async function BookingsPage({
               </Link>
             );
           })}
+          <SearchFilter basePath="/bookings" param="search" placeholder="Search offer ID..." />
+          <BookingDateFilter basePath="/bookings" fromDate={fromDate} toDate={toDate} />
         </div>
         <BookingExport
           status={status ?? undefined}
@@ -152,7 +160,7 @@ export default async function BookingsPage({
       <PaginationControls
         basePath="/bookings"
         meta={bookings.meta}
-        params={{ status: status ?? undefined }}
+        params={{ status: status ?? undefined, search, fromDate, toDate }}
       />
     </div>
   );

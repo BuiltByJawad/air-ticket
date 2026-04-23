@@ -7,6 +7,7 @@ import { Loader2, ChevronDown } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Clock, Plane } from 'lucide-react';
+import { toast } from 'sonner';
 
 function fmtTime(iso: string) {
   return new Date(iso).toLocaleTimeString('en-US', {
@@ -124,7 +125,7 @@ export function LoadMoreOffers({ initialOffers, initialCursor, searchInput, book
       setOffers((prev) => [...prev, ...res.offers]);
       setCursor(res.nextCursor);
     } catch {
-      // Silently fail — user can retry
+      toast.error('Failed to load more flights');
     } finally {
       setLoading(false);
     }

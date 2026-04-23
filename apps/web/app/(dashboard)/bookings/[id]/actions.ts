@@ -17,9 +17,10 @@ export async function confirmBookingAction(formData: FormData): Promise<void> {
     if (err instanceof ApiError && (err.status === 401 || err.status === 0)) {
       redirect('/login');
     }
+    redirect(`/bookings/${id}?toast=error&message=${encodeURIComponent(err instanceof Error ? err.message : 'Failed to confirm booking')}`);
   }
 
-  redirect(`/bookings/${id}`);
+  redirect(`/bookings/${id}?toast=confirmed`);
 }
 
 export async function cancelBookingAction(formData: FormData): Promise<void> {
@@ -35,7 +36,8 @@ export async function cancelBookingAction(formData: FormData): Promise<void> {
     if (err instanceof ApiError && (err.status === 401 || err.status === 0)) {
       redirect('/login');
     }
+    redirect(`/bookings/${id}?toast=error&message=${encodeURIComponent(err instanceof Error ? err.message : 'Failed to cancel booking')}`);
   }
 
-  redirect(`/bookings/${id}`);
+  redirect(`/bookings/${id}?toast=cancelled`);
 }

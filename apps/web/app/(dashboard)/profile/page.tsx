@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { ApiError, fetchMe } from '@/lib/api/api-client';
 import { getSessionToken } from '@/lib/auth/session';
 import { redirect } from 'next/navigation';
+import Link from 'next/link';
 import { ProfileEditForm } from './components/profile-edit-form';
 
 export default async function ProfilePage() {
@@ -79,7 +80,7 @@ export default async function ProfilePage() {
             <div className="grid gap-3 text-sm sm:grid-cols-2">
               <div>
                 <p className="text-muted-foreground">Agency Name</p>
-                <p className="font-medium">{u.agency.name}</p>
+                <p className="font-medium"><Link href={`/admin/agencies/${u.agency.id}`} className="hover:underline">{u.agency.name}</Link></p>
               </div>
               <div>
                 <p className="text-muted-foreground">Agency ID</p>

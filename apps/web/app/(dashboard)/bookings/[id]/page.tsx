@@ -7,6 +7,7 @@ import { getSessionToken } from '@/lib/auth/session';
 import { redirect, notFound } from 'next/navigation';
 import Link from 'next/link';
 import { confirmBookingAction, cancelBookingAction } from './actions';
+import { BookingToast } from './components/booking-toast';
 
 function fmtTime(iso: string) {
   return new Date(iso).toLocaleTimeString('en-US', {
@@ -89,6 +90,7 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
 
   return (
     <div className="space-y-6">
+      <BookingToast />
       <div className="flex items-center gap-4">
         <Link
           href="/bookings"

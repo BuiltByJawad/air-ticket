@@ -8,7 +8,7 @@ import { BookingStatusFilter } from '@/components/shared/booking-status-filter';
 import { SearchFilter } from '@/components/shared/search-filter';
 import { BookingActions } from './components/booking-actions';
 import { BookingExport } from '@/components/shared/booking-export';
-import { BookingDateFilter } from './components/booking-date-filter';
+import { BookingDateFilter } from '@/components/shared/booking-date-filter';
 import { exportBookingsCsvAction, exportBookingsPdfAction } from './actions';
 import Link from 'next/link';
 
