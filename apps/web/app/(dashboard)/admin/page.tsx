@@ -182,7 +182,7 @@ export default async function AdminPage() {
           <CardContent>
             <div className="space-y-3">
               {stats.topAgencies.map((a, idx) => (
-                <div key={a.agencyId} className="flex items-center justify-between rounded-lg border p-3">
+                <Link key={a.agencyId} href={`/admin/agencies/${a.agencyId}`} className="flex items-center justify-between rounded-lg border p-3 hover:bg-accent transition-colors">
                   <div className="flex items-center gap-3">
                     <span className="text-sm font-medium text-muted-foreground">#{idx + 1}</span>
                     <div>
@@ -191,7 +191,7 @@ export default async function AdminPage() {
                     </div>
                   </div>
                   <span className="text-sm font-bold">{stats.revenueCurrency} {a.revenue}</span>
-                </div>
+                </Link>
               ))}
             </div>
           </CardContent>
