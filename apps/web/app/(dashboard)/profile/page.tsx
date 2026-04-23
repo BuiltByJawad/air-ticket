@@ -1,4 +1,4 @@
-import { Building2 } from 'lucide-react';
+import { Building2, Shield, LayoutDashboard } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ApiError, fetchMe } from '@/lib/api/api-client';
@@ -66,6 +66,34 @@ export default async function ProfilePage() {
             <Badge variant={u.role === 'admin' ? 'default' : 'secondary'} className="capitalize">{u.role}</Badge>
           </CardContent>
         </Card>
+
+        {u.role === 'admin' ? (
+          <Card>
+            <CardHeader className="space-y-0 pb-2">
+              <CardTitle className="text-xs font-medium text-muted-foreground sm:text-sm">Access Level</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center gap-2">
+                <Shield className="h-4 w-4 text-primary" />
+                <span className="text-sm font-medium">Full platform access</span>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">Manage agencies, users, bookings, audit logs</p>
+            </CardContent>
+          </Card>
+        ) : (
+          <Card>
+            <CardHeader className="space-y-0 pb-2">
+              <CardTitle className="text-xs font-medium text-muted-foreground sm:text-sm">Access Level</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center gap-2">
+                <LayoutDashboard className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm font-medium">Agency access</span>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">Search flights, create and manage bookings</p>
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       {u.agency && (
