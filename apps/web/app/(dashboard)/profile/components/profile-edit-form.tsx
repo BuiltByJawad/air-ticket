@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { AlertCircle, CheckCircle2 } from 'lucide-react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { FormField } from '@/components/shared/form-field';
@@ -69,6 +70,9 @@ export function ProfileEditForm({ initialName, initialPhone }: ProfileEditFormPr
       setCurrentPassword('');
       setPassword('');
       setConfirmPassword('');
+      toast.success('Profile updated');
+    } else {
+      toast.error(actionResult.error || 'Failed to update profile');
     }
   }
 

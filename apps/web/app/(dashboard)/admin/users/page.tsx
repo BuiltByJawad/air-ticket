@@ -73,7 +73,7 @@ export default async function AdminUsersPage({
                     <Badge variant={u.role === 'admin' ? 'default' : 'secondary'} className="capitalize text-xs">
                       {u.role}
                     </Badge>
-                    <UserActions id={u.id} name={u.name} phone={u.phone} agencyId={u.agencyId} />
+                    <UserActions id={u.id} name={u.name} phone={u.phone} agencyId={u.agencyId} agencies={agenciesResult.items.map((a) => ({ id: a.id, name: a.name }))} />
                   </div>
                 </div>
               ))}

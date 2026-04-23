@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Pencil, Trash2 } from 'lucide-react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -27,8 +28,9 @@ export function AgencyActions({ id, name }: { id: string; name: string }) {
     try {
       await updateAgencyAction(id, { name: editName });
       setEditOpen(false);
-    } catch {
-      // error handled by revalidation
+      toast.success('Agency updated');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to update agency');
     } finally {
       setLoading(false);
     }
@@ -39,8 +41,9 @@ export function AgencyActions({ id, name }: { id: string; name: string }) {
     try {
       await deleteAgencyAction(id);
       setDeleteOpen(false);
-    } catch {
-      // error handled by revalidation
+      toast.success('Agency deleted');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to delete agency');
     } finally {
       setLoading(false);
     }

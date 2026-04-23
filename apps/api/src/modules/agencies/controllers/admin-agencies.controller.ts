@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Patch, Post, Query, Req } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, HttpStatus, NotFoundException, Param, Patch, Post, Query, Req } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import type { Request } from 'express';
@@ -37,6 +37,18 @@ export class AdminAgenciesController {
     const limit = query.limit ?? 20;
     const offset = query.offset ?? 0;
     return this.agenciesService.listAllPaged({ limit, offset, search: query.search });
+  }
+
+  @Get(':id/detail')
+  @ApiOperation({ summary: 'Get agency detail with agents and stats' })
+  @ApiResponse({ status: HttpStatus.OK, description: 'Agency detail returned' })
+  @Throttle({ default: { ttl: 60_000, limit: 60 } })
+  async getDetail(@Param('id') id: string) {
+    const result = await this.agenciesService.getDetail(id);
+    if (!result) {
+      throw new NotFoundException('Agency not found');
+    }
+    return result;
   }
 
   @Post()

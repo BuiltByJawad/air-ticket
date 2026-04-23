@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Pencil, Trash2 } from 'lucide-react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -16,16 +17,23 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { updateUserAction, deleteUserAction } from '../actions';
 
+interface AgencyOption {
+  id: string;
+  name: string;
+}
+
 export function UserActions({
   id,
   name,
   phone,
-  agencyId
+  agencyId,
+  agencies
 }: {
   id: string;
   name: string | null;
   phone: string | null;
   agencyId: string | null;
+  agencies: AgencyOption[];
 }) {
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -43,8 +51,9 @@ export function UserActions({
       if (editAgencyId) data.agencyId = editAgencyId;
       await updateUserAction(id, data);
       setEditOpen(false);
-    } catch {
-      // error handled by revalidation
+      toast.success('User updated');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to update user');
     } finally {
       setLoading(false);
     }
@@ -55,8 +64,9 @@ export function UserActions({
     try {
       await deleteUserAction(id);
       setDeleteOpen(false);
-    } catch {
-      // error handled by revalidation
+      toast.success('User deleted');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to delete user');
     } finally {
       setLoading(false);
     }
@@ -85,8 +95,18 @@ export function UserActions({
               <Input id="user-phone" value={editPhone} onChange={(e) => setEditPhone(e.target.value)} />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="user-agency">Agency ID</Label>
-              <Input id="user-agency" value={editAgencyId} onChange={(e) => setEditAgencyId(e.target.value)} placeholder="Leave empty to unassign" />
+              <Label htmlFor="user-agency">Agency</Label>
+              <select
+                id="user-agency"
+                value={editAgencyId}
+                onChange={(e) => setEditAgencyId(e.target.value)}
+                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              >
+                <option value="">No agency</option>
+                {agencies.map((a) => (
+                  <option key={a.id} value={a.id}>{a.name}</option>
+                ))}
+              </select>
             </div>
           </div>
           <DialogFooter>

@@ -6,7 +6,8 @@ import { Badge } from '@/components/ui/badge';
 import { PaginationControls } from '@/components/shared/pagination-controls';
 import { BookingStatusFilter } from '@/components/shared/booking-status-filter';
 import { BookingActions } from './components/booking-actions';
-import { BookingExport } from './components/booking-export';
+import { BookingExport } from '@/components/shared/booking-export';
+import { exportBookingsCsvAction, exportBookingsPdfAction } from './actions';
 import Link from 'next/link';
 
 const DEFAULT_LIMIT = 20;
@@ -38,7 +39,11 @@ export default async function AdminBookingsPage({
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <BookingStatusFilter basePath="/admin/bookings" currentStatus={status} />
-        <BookingExport status={status} />
+        <BookingExport
+          status={status}
+          onExportCsv={exportBookingsCsvAction}
+          onExportPdf={exportBookingsPdfAction}
+        />
       </div>
 
       <Card>

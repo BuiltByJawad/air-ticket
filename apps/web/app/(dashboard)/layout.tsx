@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { ApiError, fetchMe } from '@/lib/api/api-client';
 import { getSessionToken } from '@/lib/auth/session';
 import { SidebarNav } from '@/components/shared/sidebar-nav';
+import { Toaster } from 'sonner';
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const token = await getSessionToken();
@@ -27,6 +28,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
           {children}
         </div>
       </main>
+      <Toaster richColors position="top-right" />
     </div>
   );
 }

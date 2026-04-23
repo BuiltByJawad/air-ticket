@@ -616,6 +616,25 @@ export async function getAgentStats(accessToken: string): Promise<AgentStats> {
   return parseApiResponse<AgentStats>(res);
 }
 
+export interface AgencyDetail {
+  id: string;
+  name: string;
+  createdAt: string;
+  agents: { id: string; email: string; name: string | null; createdAt: string }[];
+  bookingsCount: number;
+  confirmedRevenue: string;
+  revenueCurrency: string;
+}
+
+export async function getAgencyDetail(accessToken: string, id: string): Promise<AgencyDetail> {
+  const res = await apiFetch(`/admin/agencies/${encodeURIComponent(id)}/detail`, {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${accessToken}` }
+  });
+  if (!res.ok) throw await toApiError(res, 'Failed to get agency detail');
+  return parseApiResponse<AgencyDetail>(res);
+}
+
 export async function forgotPassword(email: string): Promise<{ message: string; token?: string }> {
   const res = await apiFetch('/auth/forgot-password', {
     method: 'POST',

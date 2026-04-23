@@ -6,13 +6,14 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { exportBookingsCsvAction, exportBookingsPdfAction } from '../actions';
 
 interface BookingExportProps {
   status?: string;
+  onExportCsv: (input: { status?: string; fromDate?: string; toDate?: string }) => Promise<{ csv: string; filename: string } | null>;
+  onExportPdf: (input: { status?: string; fromDate?: string; toDate?: string }) => Promise<{ base64: string; filename: string } | null>;
 }
 
-export function BookingExport({ status }: BookingExportProps) {
+export function BookingExport({ status, onExportCsv, onExportPdf }: BookingExportProps) {
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
   const [loading, setLoading] = useState<string | null>(null);
@@ -20,7 +21,7 @@ export function BookingExport({ status }: BookingExportProps) {
   async function handleExportCsv() {
     setLoading('csv');
     try {
-      const result = await exportBookingsCsvAction({
+      const result = await onExportCsv({
         status,
         fromDate: fromDate || undefined,
         toDate: toDate ? new Date(toDate + 'T23:59:59').toISOString() : undefined
@@ -41,7 +42,7 @@ export function BookingExport({ status }: BookingExportProps) {
   async function handleExportPdf() {
     setLoading('pdf');
     try {
-      const result = await exportBookingsPdfAction({
+      const result = await onExportPdf({
         status,
         fromDate: fromDate || undefined,
         toDate: toDate ? new Date(toDate + 'T23:59:59').toISOString() : undefined

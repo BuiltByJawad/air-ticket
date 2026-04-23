@@ -42,6 +42,62 @@ export class AgenciesService {
     };
   }
 
+  async getDetail(id: string): Promise<{
+    id: string;
+    name: string;
+    createdAt: Date;
+    agents: { id: string; email: string; name: string | null; createdAt: Date }[];
+    bookingsCount: number;
+    confirmedRevenue: string;
+    revenueCurrency: string;
+  } | null> {
+    const agency = await this.prisma.agency.findUnique({
+      where: { id },
+      include: {
+        users: {
+          where: { role: 'agent' },
+          select: { id: true, email: true, name: true, createdAt: true },
+          orderBy: { createdAt: 'desc' }
+        }
+      }
+    });
+
+    if (!agency) return null;
+
+    const [bookingsCount, confirmedBookings] = await Promise.all([
+      this.prisma.booking.count({ where: { agencyId: id } }),
+      this.prisma.booking.findMany({
+        where: { agencyId: id, status: 'confirmed' },
+        select: { currency: true, amount: true }
+      })
+    ]);
+
+    const revenueByCurrency = new Map<string, number>();
+    for (const b of confirmedBookings) {
+      const amount = parseFloat(b.amount) || 0;
+      revenueByCurrency.set(b.currency, (revenueByCurrency.get(b.currency) ?? 0) + amount);
+    }
+
+    let primaryCurrency = 'USD';
+    let maxRevenue = 0;
+    for (const [currency, rev] of revenueByCurrency) {
+      if (rev > maxRevenue) {
+        maxRevenue = rev;
+        primaryCurrency = currency;
+      }
+    }
+
+    return {
+      id: agency.id,
+      name: agency.name,
+      createdAt: agency.createdAt,
+      agents: agency.users,
+      bookingsCount,
+      confirmedRevenue: (revenueByCurrency.get(primaryCurrency) ?? 0).toFixed(2),
+      revenueCurrency: primaryCurrency
+    };
+  }
+
   async listAll(): Promise<Agency[]> {
     const rows = await this.prisma.agency.findMany({
       orderBy: { createdAt: 'desc' }

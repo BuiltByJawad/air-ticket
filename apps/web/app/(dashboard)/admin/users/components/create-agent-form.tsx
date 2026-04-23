@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Plus } from 'lucide-react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -39,8 +40,11 @@ export function CreateAgentForm({ agencies }: { agencies: AgencyOption[] }) {
       setEmail('');
       setPassword('');
       setOpen(false);
+      toast.success('Agent created');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create agent');
+      const msg = err instanceof Error ? err.message : 'Failed to create agent';
+      setError(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }

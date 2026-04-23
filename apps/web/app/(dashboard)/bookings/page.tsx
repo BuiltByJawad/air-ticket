@@ -6,6 +6,8 @@ import { getSessionToken } from '@/lib/auth/session';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { PaginationControls } from '@/components/shared/pagination-controls';
+import { BookingExport } from '@/components/shared/booking-export';
+import { exportBookingsCsvAction, exportBookingsPdfAction } from './actions';
 
 function parseStatus(value: string | undefined): 'draft' | 'confirmed' | 'cancelled' | undefined {
   if (value === 'draft' || value === 'confirmed' || value === 'cancelled') return value;
@@ -96,6 +98,11 @@ export default async function BookingsPage({
             );
           })}
         </div>
+        <BookingExport
+          status={status ?? undefined}
+          onExportCsv={exportBookingsCsvAction}
+          onExportPdf={exportBookingsPdfAction}
+        />
       </div>
 
       {bookings.items.length === 0 ? (

@@ -6,6 +6,7 @@ import { PaginationControls } from '@/components/shared/pagination-controls';
 import { SearchFilter } from '@/components/shared/search-filter';
 import { AgencyActions } from './components/agency-actions';
 import { CreateAgencyForm } from './components/create-agency-form';
+import Link from 'next/link';
 
 const DEFAULT_LIMIT = 20;
 
@@ -53,10 +54,10 @@ export default async function AdminAgenciesPage({
             <div className="space-y-3">
               {result.items.map((a) => (
                 <div key={a.id} className="flex items-center justify-between rounded-lg border p-3">
-                  <div className="min-w-0">
+                  <Link href={`/admin/agencies/${a.id}`} className="min-w-0 hover:bg-accent transition-colors -m-3 p-3">
                     <p className="font-medium text-sm truncate">{a.name}</p>
                     <p className="text-xs text-muted-foreground font-mono truncate">{a.id}</p>
-                  </div>
+                  </Link>
                   <div className="flex items-center gap-2 shrink-0">
                     <p className="text-xs text-muted-foreground">
                       {new Date(a.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}

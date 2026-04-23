@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { CheckCircle, XCircle } from 'lucide-react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -24,8 +25,9 @@ export function BookingActions({ id, status }: { id: string; status: 'draft' | '
     try {
       await confirmBookingAction(id);
       setConfirmOpen(false);
-    } catch {
-      // error handled by revalidation
+      toast.success('Booking confirmed');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to confirm booking');
     } finally {
       setLoading(false);
     }
@@ -36,8 +38,9 @@ export function BookingActions({ id, status }: { id: string; status: 'draft' | '
     try {
       await cancelBookingAction(id);
       setCancelOpen(false);
-    } catch {
-      // error handled by revalidation
+      toast.success('Booking cancelled');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to cancel booking');
     } finally {
       setLoading(false);
     }
