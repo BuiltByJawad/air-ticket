@@ -1,6 +1,10 @@
+import type { Metadata } from 'next';
 import { BookOpen, Plane, TrendingUp, DollarSign, PlaneTakeoff, Calendar, Activity } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { BarChart, StatusBar } from '@/components/shared/charts';
+
+export const metadata: Metadata = { title: 'Dashboard', description: 'Your agency overview and recent activity.' };
 import { getAgentStats, listBookingsPaged } from '@/lib/api/api-client';
 import { getSessionToken } from '@/lib/auth/session';
 import Link from 'next/link';
@@ -78,28 +82,12 @@ export default async function DashboardHomePage() {
           <CardContent>
             <div className="text-xl font-bold sm:text-2xl">{bookingsByStatus.confirmed}</div>
             {statusTotal > 0 && (
-              <div className="mt-2 space-y-1">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-muted-foreground">Draft</span>
-                  <span>{Math.round((bookingsByStatus.draft / statusTotal) * 100)}%</span>
-                </div>
-                <div className="h-1.5 rounded-full bg-muted overflow-hidden">
-                  <div className="h-full rounded-full bg-yellow-500" style={{ width: `${(bookingsByStatus.draft / statusTotal) * 100}%` }} />
-                </div>
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-muted-foreground">Confirmed</span>
-                  <span>{Math.round((bookingsByStatus.confirmed / statusTotal) * 100)}%</span>
-                </div>
-                <div className="h-1.5 rounded-full bg-muted overflow-hidden">
-                  <div className="h-full rounded-full bg-green-500" style={{ width: `${(bookingsByStatus.confirmed / statusTotal) * 100}%` }} />
-                </div>
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-muted-foreground">Cancelled</span>
-                  <span>{Math.round((bookingsByStatus.cancelled / statusTotal) * 100)}%</span>
-                </div>
-                <div className="h-1.5 rounded-full bg-muted overflow-hidden">
-                  <div className="h-full rounded-full bg-red-500" style={{ width: `${(bookingsByStatus.cancelled / statusTotal) * 100}%` }} />
-                </div>
+              <div className="mt-2">
+                <StatusBar items={[
+                  { label: 'Draft', value: bookingsByStatus.draft, total: statusTotal, color: '#eab308' },
+                  { label: 'Confirmed', value: bookingsByStatus.confirmed, total: statusTotal, color: '#22c55e' },
+                  { label: 'Cancelled', value: bookingsByStatus.cancelled, total: statusTotal, color: '#ef4444' }
+                ]} />
               </div>
             )}
           </CardContent>
@@ -135,23 +123,14 @@ export default async function DashboardHomePage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
-              {monthlyRevenue.map((m) => {
-                const maxRev = Math.max(...monthlyRevenue.map((x) => parseFloat(x.revenue)), 1);
-                const pct = (parseFloat(m.revenue) / maxRev) * 100;
-                return (
-                  <div key={m.month} className="space-y-1">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="font-medium">{m.month}</span>
-                      <span className="text-muted-foreground">{revenueCurrency} {m.revenue} ({m.bookingCount} bookings)</span>
-                    </div>
-                    <div className="h-2 rounded-full bg-muted overflow-hidden">
-                      <div className="h-full rounded-full bg-primary" style={{ width: `${pct}%` }} />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+            <BarChart
+              data={monthlyRevenue.map((m) => ({
+                label: m.month.slice(5),
+                value: parseFloat(m.revenue),
+                subtitle: `${m.bookingCount} bookings`
+              }))}
+              formatValue={(v) => `${revenueCurrency} ${v.toFixed(2)}`}
+            />
           </CardContent>
         </Card>
       )}

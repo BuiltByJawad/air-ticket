@@ -1,6 +1,9 @@
+import type { Metadata } from 'next';
 import { ArrowLeft, Calendar, CheckCircle2, Clock, DollarSign, Plane, Receipt, Users, XCircle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+
+export const metadata: Metadata = { title: 'Booking Details', description: 'View booking details and manage status.' };
 import { Button } from '@/components/ui/button';
 import { ApiError, getBooking } from '@/lib/api/api-client';
 import { getSessionToken } from '@/lib/auth/session';

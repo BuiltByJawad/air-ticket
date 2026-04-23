@@ -1,6 +1,9 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Plane, Shield, BarChart3, Users, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+
+export const metadata: Metadata = { title: 'Air Ticketing', description: 'B2B air ticketing platform for travel agencies.' };
 
 export default async function PublicHomePage() {
   return (

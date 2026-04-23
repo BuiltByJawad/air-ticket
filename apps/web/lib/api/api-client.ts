@@ -113,6 +113,17 @@ export class ApiError extends Error {
   }
 }
 
+export class RateLimitError extends ApiError {
+  public readonly retryAfter: number | null;
+  constructor(retryAfter: number | null) {
+    const msg = retryAfter
+      ? `Too many requests. Please try again in ${retryAfter} seconds.`
+      : 'Too many requests. Please wait a moment and try again.';
+    super(msg, 429);
+    this.retryAfter = retryAfter;
+  }
+}
+
 async function toApiError(res: Response, message: string): Promise<ApiError> {
   let details: string | null = null;
   try {
@@ -126,6 +137,12 @@ async function toApiError(res: Response, message: string): Promise<ApiError> {
     }
   } catch (err) {
     console.error('Failed to parse API error response:', err);
+  }
+
+  if (res.status === 429) {
+    const retryAfter = res.headers.get('Retry-After');
+    const seconds = retryAfter ? parseInt(retryAfter, 10) : null;
+    return new RateLimitError(Number.isNaN(seconds) ? null : seconds);
   }
 
   const fullMessage = details ? `${message}: ${details}` : message;

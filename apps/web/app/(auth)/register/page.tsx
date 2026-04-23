@@ -1,8 +1,11 @@
+import type { Metadata } from 'next';
 import { Plane } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { RegisterForm } from './components/register-form';
 import { CleanErrorParam } from '../login/components/clean-error-param';
 import Link from 'next/link';
+
+export const metadata: Metadata = { title: 'Register', description: 'Create your Air Ticketing agency account.' };
 
 const ERROR_MESSAGES: Record<string, string> = {
   invalid_email: 'Please enter a valid email address.',

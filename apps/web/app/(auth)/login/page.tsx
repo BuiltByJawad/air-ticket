@@ -1,8 +1,11 @@
+import type { Metadata } from 'next';
 import { Plane } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { LoginForm } from './components/login-form';
 import { CleanErrorParam } from './components/clean-error-param';
 import Link from 'next/link';
+
+export const metadata: Metadata = { title: 'Login', description: 'Sign in to your Air Ticketing account.' };
 
 const ERROR_MESSAGES: Record<string, string> = {
   invalid_credentials: 'Invalid email or password.',

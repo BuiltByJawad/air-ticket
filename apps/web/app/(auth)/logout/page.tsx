@@ -1,6 +1,9 @@
+import type { Metadata } from 'next';
 import { LogOut } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+
+export const metadata: Metadata = { title: 'Logout', description: 'Sign out of your account.' };
 import { logoutAction } from './actions';
 
 export default async function LogoutPage() {

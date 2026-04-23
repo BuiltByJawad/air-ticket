@@ -1,6 +1,9 @@
+import type { Metadata } from 'next';
 import { BookOpen, Calendar, DollarSign, PlaneTakeoff, Receipt } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+
+export const metadata: Metadata = { title: 'Bookings', description: 'View and manage your agency bookings.' };
 import { ApiError, listBookingsPaged } from '@/lib/api/api-client';
 import { getSessionToken } from '@/lib/auth/session';
 import { redirect } from 'next/navigation';

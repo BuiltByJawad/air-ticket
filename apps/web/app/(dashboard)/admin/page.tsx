@@ -1,6 +1,9 @@
+import type { Metadata } from 'next';
 import { getAdminStats } from '@/lib/api/api-client';
 import { getSessionToken } from '@/lib/auth/session';
 import { Building2, Users, BookOpen, ShieldCheck, DollarSign, TrendingUp, ChevronRight, Activity } from 'lucide-react';
+
+export const metadata: Metadata = { title: 'Admin Dashboard', description: 'Platform overview — agencies, users, bookings, and revenue.' };
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BarChart, StatusBar } from '@/components/shared/charts';
 import Link from 'next/link';

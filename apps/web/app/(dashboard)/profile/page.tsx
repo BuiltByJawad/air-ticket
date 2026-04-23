@@ -1,6 +1,9 @@
+import type { Metadata } from 'next';
 import { Building2, Shield, LayoutDashboard } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+
+export const metadata: Metadata = { title: 'Profile', description: 'View and edit your account details.' };
 import { ApiError, fetchMe } from '@/lib/api/api-client';
 import { getSessionToken } from '@/lib/auth/session';
 import { redirect } from 'next/navigation';

@@ -1,6 +1,9 @@
+import type { Metadata } from 'next';
 import { listBookingsPaged } from '@/lib/api/api-client';
 import { getSessionToken } from '@/lib/auth/session';
 import { BookOpen } from 'lucide-react';
+
+export const metadata: Metadata = { title: 'All Bookings', description: 'View and manage all bookings across agencies.' };
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { PaginationControls } from '@/components/shared/pagination-controls';

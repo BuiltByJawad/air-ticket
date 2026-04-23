@@ -1,6 +1,9 @@
+import type { Metadata } from 'next';
 import { listUsersPaged } from '@/lib/api/api-client';
 import { getSessionToken } from '@/lib/auth/session';
 import { Shield, Users, UserCheck, ArrowRight } from 'lucide-react';
+
+export const metadata: Metadata = { title: 'Roles & Access', description: 'Manage user roles and permissions across the platform.' };
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';

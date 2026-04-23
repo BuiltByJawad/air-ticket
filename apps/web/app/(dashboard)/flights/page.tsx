@@ -1,6 +1,9 @@
-﻿import { Search } from 'lucide-react';
+﻿import type { Metadata } from 'next';
+import { Search } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ApiError, createBooking, quoteFlight, searchFlights } from '@/lib/api/api-client';
+import { ApiError, RateLimitError, createBooking, quoteFlight, searchFlights } from '@/lib/api/api-client';
+
+export const metadata: Metadata = { title: 'Flights', description: 'Search and book flights for your agency.' };
 import { clearSessionToken, getSessionToken } from '@/lib/auth/session';
 import { redirect } from 'next/navigation';
 import { LoadMoreOffers } from './components/load-more-offers';
@@ -43,10 +46,21 @@ export default async function FlightsPage({
       offers = res.offers;
       nextCursor = res.nextCursor;
     } catch (err: unknown) {
+      if (err instanceof RateLimitError) {
+        return (
+          <div className="space-y-6">
+            <FlightSearchForm />
+            <Card className="border-yellow-300 bg-yellow-50 dark:bg-yellow-950 dark:border-yellow-800">
+              <CardContent className="pt-6 text-center">
+                <p className="text-sm font-medium text-yellow-800 dark:text-yellow-200">{err.message}</p>
+              </CardContent>
+            </Card>
+          </div>
+        );
+      }
       if (err instanceof ApiError && err.status === 401) {
         redirect('/login');
       }
-      // Non-auth errors: show no results
     }
   }
 
@@ -72,11 +86,14 @@ export default async function FlightsPage({
         amount: quote.offer.totalPrice.amount
       });
     } catch (err: unknown) {
+      if (err instanceof RateLimitError) {
+        console.error('Rate limited during booking:', err.message);
+        redirect(`/flights?error=rate_limit`);
+      }
       if (err instanceof ApiError && err.status === 401) {
         await clearSessionToken();
         redirect('/login');
       }
-      // Non-auth booking errors: redirect back to flights
       redirect('/flights');
     }
 

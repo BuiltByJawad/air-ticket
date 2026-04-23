@@ -1,6 +1,9 @@
+import type { Metadata } from 'next';
 import { getAgencyDetail } from '@/lib/api/api-client';
 import { getSessionToken } from '@/lib/auth/session';
 import { Building2, Users, BookOpen, DollarSign, ArrowLeft, Mail } from 'lucide-react';
+
+export const metadata: Metadata = { title: 'Agency Details', description: 'View agency details, agents, and performance.' };
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { PaginationControls } from '@/components/shared/pagination-controls';

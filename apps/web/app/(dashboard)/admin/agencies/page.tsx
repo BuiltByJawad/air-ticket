@@ -1,6 +1,9 @@
+import type { Metadata } from 'next';
 import { listAgenciesPaged } from '@/lib/api/api-client';
 import { getSessionToken } from '@/lib/auth/session';
 import { Building2 } from 'lucide-react';
+
+export const metadata: Metadata = { title: 'Agencies', description: 'Manage travel agencies on the platform.' };
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { PaginationControls } from '@/components/shared/pagination-controls';
 import { SearchFilter } from '@/components/shared/search-filter';

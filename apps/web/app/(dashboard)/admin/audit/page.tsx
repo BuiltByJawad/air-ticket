@@ -1,6 +1,9 @@
+import type { Metadata } from 'next';
 import { listAuditLogsPaged } from '@/lib/api/api-client';
 import { getSessionToken } from '@/lib/auth/session';
 import { ShieldCheck } from 'lucide-react';
+
+export const metadata: Metadata = { title: 'Audit Logs', description: 'Track system activity and changes.' };
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { PaginationControls } from '@/components/shared/pagination-controls';
 import { AuditActionFilter } from '@/components/shared/audit-action-filter';

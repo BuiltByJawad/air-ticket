@@ -1,6 +1,9 @@
+import type { Metadata } from 'next';
 import { getUserDetail } from '@/lib/api/api-client';
 import { getSessionToken } from '@/lib/auth/session';
 import { Users, BookOpen, DollarSign, ArrowLeft, Mail, Phone, Building2, Shield } from 'lucide-react';
+
+export const metadata: Metadata = { title: 'User Details', description: 'View user details, role, and activity.' };
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';

@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
+import { ThemeToggle } from '@/components/shared/theme-toggle';
 
 type NavUser = {
   sub: string;
@@ -129,6 +130,9 @@ function NavContent({
           {user.agency && (
             <p className="text-xs text-muted-foreground truncate">{user.agency.name}</p>
           )}
+        </div>
+        <div className="px-3 py-2">
+          <ThemeToggle />
         </div>
         <form action="/logout" method="get">
           <button
