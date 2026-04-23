@@ -12,6 +12,7 @@ describe('BookingsService', () => {
       findMany: jest.Mock;
       findUnique: jest.Mock;
       update: jest.Mock;
+      count: jest.Mock;
     };
   };
 
@@ -42,15 +43,20 @@ describe('BookingsService', () => {
     updatedAt: new Date()
   };
 
+  const mockPrismaCount = jest.fn();
+
   beforeEach(async () => {
     prisma = {
       booking: {
         create: jest.fn(),
         findMany: jest.fn(),
         findUnique: jest.fn(),
-        update: jest.fn()
+        update: jest.fn(),
+        count: mockPrismaCount
       }
     };
+
+    mockPrismaCount.mockReset();
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -117,6 +123,100 @@ describe('BookingsService', () => {
           currency: 'USD',
           amount: '500.00'
         })
+      ).rejects.toThrow(BadRequestException);
+    });
+  });
+
+  describe('listPagedForUser', () => {
+    it('should return paginated bookings for agent scoped to agency', async () => {
+      mockPrismaCount.mockResolvedValue(1);
+      prisma.booking.findMany.mockResolvedValue([mockBookingRow]);
+
+      const result = await service.listPagedForUser(agentUser, { limit: 20, offset: 0 });
+
+      expect(result.items).toHaveLength(1);
+      expect(result.meta.total).toBe(1);
+      expect(prisma.booking.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { agencyId: 'agency-1' } })
+      );
+    });
+
+    it('should return paginated bookings for admin without agency filter', async () => {
+      mockPrismaCount.mockResolvedValue(0);
+      prisma.booking.findMany.mockResolvedValue([]);
+
+      const result = await service.listPagedForUser(adminUser, { limit: 20, offset: 0 });
+
+      expect(result.items).toHaveLength(0);
+      const where = (prisma.booking.findMany as jest.Mock).mock.calls[0][0].where;
+      expect(where.agencyId).toBeUndefined();
+    });
+
+    it('should filter by search on offerId', async () => {
+      mockPrismaCount.mockResolvedValue(1);
+      prisma.booking.findMany.mockResolvedValue([mockBookingRow]);
+
+      await service.listPagedForUser(agentUser, { search: 'offer-1', limit: 20, offset: 0 });
+
+      const where = (prisma.booking.findMany as jest.Mock).mock.calls[0][0].where;
+      expect(where.offerId).toEqual({ contains: 'offer-1', mode: 'insensitive' });
+    });
+
+    it('should filter by fromDate', async () => {
+      mockPrismaCount.mockResolvedValue(0);
+      prisma.booking.findMany.mockResolvedValue([]);
+
+      await service.listPagedForUser(agentUser, { fromDate: '2024-01-01', limit: 20, offset: 0 });
+
+      const where = (prisma.booking.findMany as jest.Mock).mock.calls[0][0].where;
+      expect(where.createdAt).toEqual({ gte: expect.any(Date) });
+    });
+
+    it('should filter by toDate', async () => {
+      mockPrismaCount.mockResolvedValue(0);
+      prisma.booking.findMany.mockResolvedValue([]);
+
+      await service.listPagedForUser(agentUser, { toDate: '2024-12-31', limit: 20, offset: 0 });
+
+      const where = (prisma.booking.findMany as jest.Mock).mock.calls[0][0].where;
+      expect(where.createdAt).toEqual({ lte: expect.any(Date) });
+    });
+
+    it('should filter by both fromDate and toDate', async () => {
+      mockPrismaCount.mockResolvedValue(0);
+      prisma.booking.findMany.mockResolvedValue([]);
+
+      await service.listPagedForUser(agentUser, { fromDate: '2024-01-01', toDate: '2024-12-31', limit: 20, offset: 0 });
+
+      const where = (prisma.booking.findMany as jest.Mock).mock.calls[0][0].where;
+      expect(where.createdAt).toEqual({ gte: expect.any(Date), lte: expect.any(Date) });
+    });
+
+    it('should combine search, date, and status filters', async () => {
+      mockPrismaCount.mockResolvedValue(1);
+      prisma.booking.findMany.mockResolvedValue([mockBookingRow]);
+
+      await service.listPagedForUser(agentUser, {
+        search: 'offer',
+        fromDate: '2024-01-01',
+        toDate: '2024-12-31',
+        status: 'draft',
+        limit: 10,
+        offset: 0
+      });
+
+      const where = (prisma.booking.findMany as jest.Mock).mock.calls[0][0].where;
+      expect(where.offerId).toEqual({ contains: 'offer', mode: 'insensitive' });
+      expect(where.createdAt).toEqual({ gte: expect.any(Date), lte: expect.any(Date) });
+      expect(where.status).toBe('draft');
+      expect(where.agencyId).toBe('agency-1');
+    });
+
+    it('should throw BadRequestException for agent without agencyId', async () => {
+      const noAgencyUser: CurrentUserData = { sub: 'user-2', email: 'a@b.com', role: 'agent', agencyId: null };
+
+      await expect(
+        service.listPagedForUser(noAgencyUser, { limit: 20, offset: 0 })
       ).rejects.toThrow(BadRequestException);
     });
   });

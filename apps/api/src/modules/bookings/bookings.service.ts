@@ -53,10 +53,12 @@ export class BookingsService {
     const limit = input.limit;
     const offset = input.offset;
 
-    const dateFilter: Prisma.BookingWhereInput = {
-      ...(input.fromDate ? { createdAt: { gte: new Date(input.fromDate) } } : {}),
-      ...(input.toDate ? { createdAt: { lte: new Date(input.toDate) } } : {})
+    const createdAtFilter: Prisma.DateTimeFilter = {
+      ...(input.fromDate ? { gte: new Date(input.fromDate) } : {}),
+      ...(input.toDate ? { lte: new Date(input.toDate) } : {})
     };
+    const dateFilter: Prisma.BookingWhereInput =
+      Object.keys(createdAtFilter).length > 0 ? { createdAt: createdAtFilter } : {};
 
     const searchFilter: Prisma.BookingWhereInput = input.search
       ? { offerId: { contains: input.search, mode: 'insensitive' } }
