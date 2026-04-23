@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { PlaneTakeoff, PlaneLanding, X, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 interface AirportSuggestion {
   iata: string;
@@ -117,6 +118,7 @@ export function AirportAutocomplete({
     } catch {
       setResults([]);
       setOpen(false);
+      toast.error('Failed to search airports');
     } finally {
       setLoading(false);
     }
