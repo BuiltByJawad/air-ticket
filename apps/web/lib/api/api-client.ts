@@ -129,18 +129,26 @@ async function parseApiResponse<T>(res: Response): Promise<T> {
   return json as T;
 }
 
-async function apiFetch(path: string, init: RequestInit): Promise<Response> {
+type CacheStrategy =
+  | { cache: 'no-store' }
+  | { cache: 'force-cache' }
+  | { next: { revalidate: number } };
+
+const SENSITIVE: CacheStrategy = { cache: 'no-store' };
+const REFERENCE: CacheStrategy = { cache: 'force-cache' };
+
+async function apiFetch(path: string, init: RequestInit, strategy: CacheStrategy = SENSITIVE): Promise<Response> {
   const env = loadWebEnv();
   const url = new URL(path, env.API_BASE_URL);
 
   try {
     return await fetch(url, {
       ...init,
+      ...strategy,
       headers: {
         'content-type': 'application/json',
         ...(init.headers ?? {})
-      },
-      cache: 'no-store'
+      }
     });
   } catch {
     throw new ApiError('API unreachable', 0);
@@ -587,7 +595,7 @@ export async function suggestAirports(query: string, accessToken?: string): Prom
   const res = await apiFetch(`/flights/airports?q=${encodeURIComponent(query)}`, {
     method: 'GET',
     headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {}
-  });
+  }, REFERENCE);
 
   if (!res.ok) {
     return [];
