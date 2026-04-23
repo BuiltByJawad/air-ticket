@@ -73,7 +73,10 @@ export default async function AdminBookingsPage({
                   <Link href={`/bookings/${b.id}`} className="flex items-center justify-between flex-1 min-w-0 hover:bg-accent transition-colors -m-3 p-3">
                     <div className="min-w-0">
                       <p className="font-medium text-sm truncate">{b.offerId}</p>
-                      <p className="text-xs text-muted-foreground font-mono truncate">{b.id}</p>
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <span className="font-mono truncate">{b.id}</span>
+                        {b.agencyName && <span>· {b.agencyName}</span>}
+                      </div>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
                       <Badge

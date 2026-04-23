@@ -14,6 +14,7 @@ function toBooking(dto: {
   currency: string;
   amount: string;
   agencyId: string;
+  agencyName?: string;
   createdByUserId: string;
   createdAt: Date;
   updatedAt: Date;
@@ -28,6 +29,7 @@ function toBooking(dto: {
       amount: dto.amount
     },
     agencyId: dto.agencyId,
+    agencyName: dto.agencyName,
     createdByUserId: dto.createdByUserId,
     createdAt: dto.createdAt,
     updatedAt: dto.updatedAt
@@ -105,12 +107,15 @@ export class BookingsService {
         where,
         orderBy: { createdAt: 'desc' },
         skip: offset,
-        take: limit
+        take: limit,
+        include: {
+          agency: { select: { name: true } }
+        }
       })
     ]);
 
     return {
-      items: rows.map(toBooking),
+      items: rows.map((r) => toBooking({ ...r, agencyName: r.agency?.name })),
       meta: { total, limit, offset }
     };
   }

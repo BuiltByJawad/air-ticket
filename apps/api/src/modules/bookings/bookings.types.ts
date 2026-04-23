@@ -15,6 +15,7 @@ export interface Booking {
   offerData: JsonValue;
   totalPrice: MoneyAmount;
   agencyId: string;
+  agencyName?: string;
   createdByUserId: string;
   createdAt: Date;
   updatedAt: Date;

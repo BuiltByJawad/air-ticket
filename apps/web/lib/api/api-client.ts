@@ -64,6 +64,7 @@ export interface Booking {
     amount: string;
   };
   agencyId: string;
+  agencyName?: string;
   createdByUserId: string;
   createdAt: string;
   updatedAt: string;
