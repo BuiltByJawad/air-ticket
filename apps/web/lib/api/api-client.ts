@@ -1,4 +1,21 @@
 import { loadWebEnv } from '../config/env';
+import {
+  normalizeAuthTokenResponse,
+  normalizeMeResponse,
+  normalizeFlightSearchResponse,
+  normalizeFlightQuoteResponse,
+  normalizeBooking,
+  normalizeAdminAgency,
+  normalizeAdminUser,
+  normalizeAgencyDetail,
+  normalizeUserDetail,
+  normalizeAuditLog,
+  normalizeAirportSuggestion,
+  normalizeAdminStats,
+  normalizeAgentStats,
+  normalizeRegisterResponse,
+  normalizePaginatedResult
+} from './normalizers';
 
 interface ApiEnvelope<T> {
   success: boolean;
@@ -168,7 +185,8 @@ export async function loginWithPassword(input: {
     throw await toApiError(res, 'Invalid credentials');
   }
 
-  return parseApiResponse<AuthTokenResponse>(res);
+  const data = await parseApiResponse<unknown>(res);
+  return normalizeAuthTokenResponse(data);
 }
 
 export async function fetchMe(accessToken: string): Promise<MeResponse> {
@@ -183,7 +201,8 @@ export async function fetchMe(accessToken: string): Promise<MeResponse> {
     throw await toApiError(res, 'Unauthorized');
   }
 
-  return parseApiResponse<MeResponse>(res);
+  const data = await parseApiResponse<unknown>(res);
+  return normalizeMeResponse(data);
 }
 
 export async function updateProfile(accessToken: string, input: { name?: string; phone?: string; currentPassword?: string; password?: string }): Promise<MeResponse> {
@@ -199,7 +218,8 @@ export async function updateProfile(accessToken: string, input: { name?: string;
     throw await toApiError(res, 'Failed to update profile');
   }
 
-  return parseApiResponse<MeResponse>(res);
+  const data = await parseApiResponse<unknown>(res);
+  return normalizeMeResponse(data);
 }
 
 export async function searchFlights(
@@ -218,7 +238,8 @@ export async function searchFlights(
     throw await toApiError(res, 'Failed to search flights');
   }
 
-  return parseApiResponse<FlightSearchResponse>(res);
+  const data = await parseApiResponse<unknown>(res);
+  return normalizeFlightSearchResponse(data);
 }
 
 export async function quoteFlight(accessToken: string, input: { offerId: string }): Promise<FlightQuoteResponse> {
@@ -234,7 +255,8 @@ export async function quoteFlight(accessToken: string, input: { offerId: string 
     throw await toApiError(res, 'Failed to quote flight');
   }
 
-  return parseApiResponse<FlightQuoteResponse>(res);
+  const data = await parseApiResponse<unknown>(res);
+  return normalizeFlightQuoteResponse(data);
 }
 
 export async function createBooking(
@@ -253,7 +275,8 @@ export async function createBooking(
     throw await toApiError(res, 'Failed to create booking');
   }
 
-  return parseApiResponse<Booking>(res);
+  const data = await parseApiResponse<unknown>(res);
+  return normalizeBooking(data);
 }
 
 export async function getBooking(accessToken: string, id: string): Promise<Booking> {
@@ -268,7 +291,8 @@ export async function getBooking(accessToken: string, id: string): Promise<Booki
     throw await toApiError(res, 'Failed to get booking');
   }
 
-  return parseApiResponse<Booking>(res);
+  const data = await parseApiResponse<unknown>(res);
+  return normalizeBooking(data);
 }
 
 export async function confirmBooking(accessToken: string, id: string): Promise<Booking> {
@@ -283,7 +307,8 @@ export async function confirmBooking(accessToken: string, id: string): Promise<B
     throw await toApiError(res, 'Failed to confirm booking');
   }
 
-  return parseApiResponse<Booking>(res);
+  const data = await parseApiResponse<unknown>(res);
+  return normalizeBooking(data);
 }
 
 export async function cancelBooking(accessToken: string, id: string): Promise<Booking> {
@@ -298,7 +323,8 @@ export async function cancelBooking(accessToken: string, id: string): Promise<Bo
     throw await toApiError(res, 'Failed to cancel booking');
   }
 
-  return parseApiResponse<Booking>(res);
+  const data = await parseApiResponse<unknown>(res);
+  return normalizeBooking(data);
 }
 
 export async function listBookings(
@@ -329,7 +355,8 @@ export async function listBookings(
     throw await toApiError(res, 'Failed to list bookings');
   }
 
-  return parseApiResponse<Booking[]>(res);
+  const data = await parseApiResponse<unknown>(res);
+  return (Array.isArray(data) ? data : []).map(normalizeBooking);
 }
 
 export async function listBookingsPaged(
@@ -366,7 +393,8 @@ export async function listBookingsPaged(
     throw await toApiError(res, 'Failed to list bookings');
   }
 
-  return parseApiResponse<PaginatedResult<Booking>>(res);
+  const data = await parseApiResponse<unknown>(res);
+  return normalizePaginatedResult(data, normalizeBooking);
 }
 
 export interface RegisterResponse {
@@ -395,7 +423,8 @@ export async function registerWithPassword(input: {
     throw await toApiError(res, 'Registration failed');
   }
 
-  return parseApiResponse<RegisterResponse>(res);
+  const data = await parseApiResponse<unknown>(res);
+  return normalizeRegisterResponse(data);
 }
 
 export interface AirportSuggestion {
@@ -427,7 +456,8 @@ export async function listAgencies(accessToken: string): Promise<AdminAgency[]> 
     headers: { Authorization: `Bearer ${accessToken}` }
   });
   if (!res.ok) throw await toApiError(res, 'Failed to list agencies');
-  return parseApiResponse<AdminAgency[]>(res);
+  const data = await parseApiResponse<unknown>(res);
+  return (Array.isArray(data) ? data : []).map(normalizeAdminAgency);
 }
 
 export async function listAgenciesPaged(
@@ -446,7 +476,8 @@ export async function listAgenciesPaged(
     headers: { Authorization: `Bearer ${accessToken}` }
   });
   if (!res.ok) throw await toApiError(res, 'Failed to list agencies');
-  return parseApiResponse<PaginatedResult<AdminAgency>>(res);
+  const data = await parseApiResponse<unknown>(res);
+  return normalizePaginatedResult(data, normalizeAdminAgency);
 }
 
 export async function listUsers(accessToken: string): Promise<AdminUser[]> {
@@ -455,7 +486,8 @@ export async function listUsers(accessToken: string): Promise<AdminUser[]> {
     headers: { Authorization: `Bearer ${accessToken}` }
   });
   if (!res.ok) throw await toApiError(res, 'Failed to list users');
-  return parseApiResponse<AdminUser[]>(res);
+  const data = await parseApiResponse<unknown>(res);
+  return (Array.isArray(data) ? data : []).map(normalizeAdminUser);
 }
 
 export async function listUsersPaged(
@@ -475,7 +507,8 @@ export async function listUsersPaged(
     headers: { Authorization: `Bearer ${accessToken}` }
   });
   if (!res.ok) throw await toApiError(res, 'Failed to list users');
-  return parseApiResponse<PaginatedResult<AdminUser>>(res);
+  const data = await parseApiResponse<unknown>(res);
+  return normalizePaginatedResult(data, normalizeAdminUser);
 }
 
 export interface AuditLog {
@@ -497,7 +530,8 @@ export async function createAgency(accessToken: string, input: { name: string })
     body: JSON.stringify(input)
   });
   if (!res.ok) throw await toApiError(res, 'Failed to create agency');
-  return parseApiResponse<AdminAgency>(res);
+  const data = await parseApiResponse<unknown>(res);
+  return normalizeAdminAgency(data);
 }
 
 export async function createAgent(accessToken: string, input: { agencyId: string; email: string; password: string }): Promise<AdminUser> {
@@ -507,7 +541,8 @@ export async function createAgent(accessToken: string, input: { agencyId: string
     body: JSON.stringify(input)
   });
   if (!res.ok) throw await toApiError(res, 'Failed to create agent');
-  return parseApiResponse<AdminUser>(res);
+  const data = await parseApiResponse<unknown>(res);
+  return normalizeAdminUser(data);
 }
 
 export async function updateAgency(
@@ -521,7 +556,8 @@ export async function updateAgency(
     body: JSON.stringify(input)
   });
   if (!res.ok) throw await toApiError(res, 'Failed to update agency');
-  return parseApiResponse<AdminAgency>(res);
+  const data = await parseApiResponse<unknown>(res);
+  return normalizeAdminAgency(data);
 }
 
 export async function deleteAgency(accessToken: string, id: string): Promise<AdminAgency> {
@@ -530,7 +566,8 @@ export async function deleteAgency(accessToken: string, id: string): Promise<Adm
     headers: { Authorization: `Bearer ${accessToken}` }
   });
   if (!res.ok) throw await toApiError(res, 'Failed to delete agency');
-  return parseApiResponse<AdminAgency>(res);
+  const data = await parseApiResponse<unknown>(res);
+  return normalizeAdminAgency(data);
 }
 
 export async function updateUser(
@@ -544,7 +581,8 @@ export async function updateUser(
     body: JSON.stringify(input)
   });
   if (!res.ok) throw await toApiError(res, 'Failed to update user');
-  return parseApiResponse<AdminUser>(res);
+  const data = await parseApiResponse<unknown>(res);
+  return normalizeAdminUser(data);
 }
 
 export async function deleteUser(accessToken: string, id: string): Promise<AdminUser> {
@@ -553,7 +591,8 @@ export async function deleteUser(accessToken: string, id: string): Promise<Admin
     headers: { Authorization: `Bearer ${accessToken}` }
   });
   if (!res.ok) throw await toApiError(res, 'Failed to delete user');
-  return parseApiResponse<AdminUser>(res);
+  const data = await parseApiResponse<unknown>(res);
+  return normalizeAdminUser(data);
 }
 
 export async function listAuditLogsPaged(
@@ -588,7 +627,8 @@ export async function listAuditLogsPaged(
     headers: { Authorization: `Bearer ${accessToken}` }
   });
   if (!res.ok) throw await toApiError(res, 'Failed to list audit logs');
-  return parseApiResponse<PaginatedResult<AuditLog>>(res);
+  const data = await parseApiResponse<unknown>(res);
+  return normalizePaginatedResult(data, normalizeAuditLog);
 }
 
 export async function suggestAirports(query: string, accessToken?: string): Promise<AirportSuggestion[]> {
@@ -601,7 +641,8 @@ export async function suggestAirports(query: string, accessToken?: string): Prom
     return [];
   }
 
-  return parseApiResponse<AirportSuggestion[]>(res);
+  const data = await parseApiResponse<unknown>(res);
+  return (Array.isArray(data) ? data : []).map(normalizeAirportSuggestion);
 }
 
 export interface AdminStats {
@@ -623,7 +664,8 @@ export async function getAdminStats(accessToken: string): Promise<AdminStats> {
     headers: { Authorization: `Bearer ${accessToken}` }
   });
   if (!res.ok) throw await toApiError(res, 'Failed to get admin stats');
-  return parseApiResponse<AdminStats>(res);
+  const data = await parseApiResponse<unknown>(res);
+  return normalizeAdminStats(data);
 }
 
 export interface AgentStats {
@@ -641,7 +683,8 @@ export async function getAgentStats(accessToken: string): Promise<AgentStats> {
     headers: { Authorization: `Bearer ${accessToken}` }
   });
   if (!res.ok) throw await toApiError(res, 'Failed to get agent stats');
-  return parseApiResponse<AgentStats>(res);
+  const data = await parseApiResponse<unknown>(res);
+  return normalizeAgentStats(data);
 }
 
 export interface AgencyDetail {
@@ -665,7 +708,8 @@ export async function getAgencyDetail(accessToken: string, id: string, agentLimi
     headers: { Authorization: `Bearer ${accessToken}` }
   });
   if (!res.ok) throw await toApiError(res, 'Failed to get agency detail');
-  return parseApiResponse<AgencyDetail>(res);
+  const data = await parseApiResponse<unknown>(res);
+  return normalizeAgencyDetail(data);
 }
 
 export interface UserDetail {
@@ -688,7 +732,8 @@ export async function getUserDetail(accessToken: string, id: string): Promise<Us
     headers: { Authorization: `Bearer ${accessToken}` }
   });
   if (!res.ok) throw await toApiError(res, 'Failed to get user detail');
-  return parseApiResponse<UserDetail>(res);
+  const data = await parseApiResponse<unknown>(res);
+  return normalizeUserDetail(data);
 }
 
 export async function forgotPassword(email: string): Promise<{ message: string; token?: string }> {
