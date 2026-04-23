@@ -58,6 +58,9 @@ export class AuditService {
     resource?: string;
     agencyId?: string;
     userId?: string;
+    search?: string;
+    fromDate?: string;
+    toDate?: string;
     limit?: number;
     offset?: number;
   }): Promise<PaginatedResult<AuditLog>> {
@@ -69,6 +72,19 @@ export class AuditService {
     if (query.resource) where.resource = query.resource;
     if (query.agencyId) where.agencyId = query.agencyId;
     if (query.userId) where.userId = query.userId;
+
+    if (query.search) {
+      where.OR = [
+        { action: { contains: query.search, mode: 'insensitive' } },
+        { resource: { contains: query.search, mode: 'insensitive' } },
+        { resourceId: { contains: query.search, mode: 'insensitive' } }
+      ];
+    }
+
+    const dateFilter: Record<string, unknown> = {};
+    if (query.fromDate) dateFilter.gte = new Date(query.fromDate);
+    if (query.toDate) dateFilter.lte = new Date(query.toDate);
+    if (Object.keys(dateFilter).length > 0) where.createdAt = dateFilter;
 
     const [items, total] = await Promise.all([
       this.prisma.auditLog.findMany({

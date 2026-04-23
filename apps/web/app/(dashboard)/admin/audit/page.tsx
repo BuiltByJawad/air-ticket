@@ -5,6 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { PaginationControls } from '@/components/shared/pagination-controls';
 import { AuditActionFilter } from '@/components/shared/audit-action-filter';
 import { AuditResourceFilter } from '@/components/shared/audit-resource-filter';
+import { SearchFilter } from '@/components/shared/search-filter';
+import { BookingDateFilter } from '@/components/shared/booking-date-filter';
 import { AuditLogDetail } from './components/audit-log-detail';
 
 const DEFAULT_LIMIT = 20;
@@ -22,8 +24,11 @@ export default async function AuditLogsPage({
   const offset = Number(sp.offset) || 0;
   const action = typeof sp.action === 'string' ? sp.action : undefined;
   const resource = typeof sp.resource === 'string' ? sp.resource : undefined;
+  const search = typeof sp.search === 'string' ? sp.search : undefined;
+  const fromDate = typeof sp.fromDate === 'string' ? sp.fromDate : undefined;
+  const toDate = typeof sp.toDate === 'string' ? sp.toDate : undefined;
 
-  const result = await listAuditLogsPaged(token, { limit, offset, action, resource }).catch(() => ({
+  const result = await listAuditLogsPaged(token, { limit, offset, action, resource, search, fromDate, toDate }).catch(() => ({
     items: [],
     meta: { total: 0, limit, offset }
   }));
@@ -38,6 +43,8 @@ export default async function AuditLogsPage({
       <div className="flex flex-wrap items-center gap-3">
         <AuditActionFilter basePath="/admin/audit" currentAction={action} />
         <AuditResourceFilter basePath="/admin/audit" currentResource={resource} />
+        <SearchFilter basePath="/admin/audit" param="search" placeholder="Search actions..." />
+        <BookingDateFilter basePath="/admin/audit" fromDate={fromDate} toDate={toDate} />
       </div>
 
       <Card>
@@ -60,7 +67,7 @@ export default async function AuditLogsPage({
           <PaginationControls
             basePath="/admin/audit"
             meta={result.meta}
-            params={{ action, resource }}
+            params={{ action, resource, search, fromDate, toDate }}
           />
         </CardContent>
       </Card>

@@ -24,6 +24,18 @@ class ListAuditLogsQueryDto {
   @IsOptional()
   userId?: string;
 
+  @IsString()
+  @IsOptional()
+  search?: string;
+
+  @IsString()
+  @IsOptional()
+  fromDate?: string;
+
+  @IsString()
+  @IsOptional()
+  toDate?: string;
+
   @IsInt()
   @Min(1)
   @Max(100)

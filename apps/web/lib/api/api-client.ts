@@ -548,6 +548,9 @@ export async function listAuditLogsPaged(
     resource?: string;
     agencyId?: string;
     userId?: string;
+    search?: string;
+    fromDate?: string;
+    toDate?: string;
     limit?: number;
     offset?: number;
   }
@@ -557,6 +560,9 @@ export async function listAuditLogsPaged(
   if (input?.resource) params.set('resource', input.resource);
   if (input?.agencyId) params.set('agencyId', input.agencyId);
   if (input?.userId) params.set('userId', input.userId);
+  if (input?.search) params.set('search', input.search);
+  if (input?.fromDate) params.set('fromDate', input.fromDate);
+  if (input?.toDate) params.set('toDate', input.toDate);
   if (input?.limit !== undefined) params.set('limit', String(input.limit));
   if (input?.offset !== undefined) params.set('offset', String(input.offset));
 
