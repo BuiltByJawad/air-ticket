@@ -5,6 +5,7 @@ import { loadWebEnv } from '@/lib/config/env';
 
 export async function exportBookingsCsvAction(input: {
   status?: string;
+  search?: string;
   fromDate?: string;
   toDate?: string;
 }): Promise<{ csv: string; filename: string } | null> {
@@ -14,6 +15,7 @@ export async function exportBookingsCsvAction(input: {
   const env = loadWebEnv();
   const params = new URLSearchParams();
   if (input.status) params.set('status', input.status);
+  if (input.search) params.set('search', input.search);
   if (input.fromDate) params.set('fromDate', input.fromDate);
   if (input.toDate) params.set('toDate', input.toDate);
 
@@ -33,6 +35,7 @@ export async function exportBookingsCsvAction(input: {
 
 export async function exportBookingsPdfAction(input: {
   status?: string;
+  search?: string;
   fromDate?: string;
   toDate?: string;
 }): Promise<{ base64: string; filename: string } | null> {
@@ -42,6 +45,7 @@ export async function exportBookingsPdfAction(input: {
   const env = loadWebEnv();
   const params = new URLSearchParams();
   if (input.status) params.set('status', input.status);
+  if (input.search) params.set('search', input.search);
   if (input.fromDate) params.set('fromDate', input.fromDate);
   if (input.toDate) params.set('toDate', input.toDate);
 

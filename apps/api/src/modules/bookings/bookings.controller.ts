@@ -78,6 +78,7 @@ export class BookingsController {
     const csv = await this.bookingsService.exportCsv(user, {
       agencyId: query.agencyId,
       status: query.status,
+      search: query.search,
       fromDate: query.fromDate,
       toDate: query.toDate
     });
@@ -88,7 +89,7 @@ export class BookingsController {
       agencyId: user.agencyId,
       userId: user.sub,
       requestId: req.requestId,
-      metadata: { status: query.status, fromDate: query.fromDate, toDate: query.toDate }
+      metadata: { status: query.status, search: query.search, fromDate: query.fromDate, toDate: query.toDate }
     });
 
     req.res?.setHeader('Content-Type', 'text/csv');
@@ -104,6 +105,7 @@ export class BookingsController {
     const pdfBuffer = await this.bookingsService.exportPdf(user, {
       agencyId: query.agencyId,
       status: query.status,
+      search: query.search,
       fromDate: query.fromDate,
       toDate: query.toDate
     });
@@ -114,7 +116,7 @@ export class BookingsController {
       agencyId: user.agencyId,
       userId: user.sub,
       requestId: req.requestId,
-      metadata: { status: query.status, fromDate: query.fromDate, toDate: query.toDate }
+      metadata: { status: query.status, search: query.search, fromDate: query.fromDate, toDate: query.toDate }
     });
 
     req.res?.setHeader('Content-Type', 'application/pdf');

@@ -9,11 +9,12 @@ import { Label } from '@/components/ui/label';
 
 interface BookingExportProps {
   status?: string;
-  onExportCsv: (input: { status?: string; fromDate?: string; toDate?: string }) => Promise<{ csv: string; filename: string } | null>;
-  onExportPdf: (input: { status?: string; fromDate?: string; toDate?: string }) => Promise<{ base64: string; filename: string } | null>;
+  search?: string;
+  onExportCsv: (input: { status?: string; search?: string; fromDate?: string; toDate?: string }) => Promise<{ csv: string; filename: string } | null>;
+  onExportPdf: (input: { status?: string; search?: string; fromDate?: string; toDate?: string }) => Promise<{ base64: string; filename: string } | null>;
 }
 
-export function BookingExport({ status, onExportCsv, onExportPdf }: BookingExportProps) {
+export function BookingExport({ status, search, onExportCsv, onExportPdf }: BookingExportProps) {
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
   const [loading, setLoading] = useState<string | null>(null);
@@ -23,6 +24,7 @@ export function BookingExport({ status, onExportCsv, onExportPdf }: BookingExpor
     try {
       const result = await onExportCsv({
         status,
+        search,
         fromDate: fromDate || undefined,
         toDate: toDate ? new Date(toDate + 'T23:59:59').toISOString() : undefined
       });
@@ -44,6 +46,7 @@ export function BookingExport({ status, onExportCsv, onExportPdf }: BookingExpor
     try {
       const result = await onExportPdf({
         status,
+        search,
         fromDate: fromDate || undefined,
         toDate: toDate ? new Date(toDate + 'T23:59:59').toISOString() : undefined
       });

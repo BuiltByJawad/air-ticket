@@ -13,6 +13,11 @@ export class ExportBookingsQueryDto {
   @IsString()
   agencyId?: string;
 
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  search?: string;
+
   @ApiProperty({ required: false, description: 'Start date (ISO 8601)' })
   @IsOptional()
   @IsDateString()

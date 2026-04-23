@@ -237,6 +237,7 @@ export class BookingsService {
     input: {
       agencyId?: string;
       status?: string;
+      search?: string;
       fromDate?: string;
       toDate?: string;
     }
@@ -256,11 +257,16 @@ export class BookingsService {
       where.status = input.status as Prisma.BookingWhereInput['status'];
     }
 
-    if (input.fromDate || input.toDate) {
-      where.createdAt = {
-        ...(input.fromDate ? { gte: new Date(input.fromDate) } : {}),
-        ...(input.toDate ? { lte: new Date(input.toDate) } : {})
-      };
+    if (input.search) {
+      where.offerId = { contains: input.search, mode: 'insensitive' };
+    }
+
+    const createdAtFilter: Prisma.DateTimeFilter = {
+      ...(input.fromDate ? { gte: new Date(input.fromDate) } : {}),
+      ...(input.toDate ? { lte: new Date(input.toDate) } : {})
+    };
+    if (Object.keys(createdAtFilter).length > 0) {
+      where.createdAt = createdAtFilter;
     }
 
     const rows = await this.prisma.booking.findMany({
@@ -296,6 +302,7 @@ export class BookingsService {
     input: {
       agencyId?: string;
       status?: string;
+      search?: string;
       fromDate?: string;
       toDate?: string;
     }
@@ -315,11 +322,16 @@ export class BookingsService {
       where.status = input.status as Prisma.BookingWhereInput['status'];
     }
 
-    if (input.fromDate || input.toDate) {
-      where.createdAt = {
-        ...(input.fromDate ? { gte: new Date(input.fromDate) } : {}),
-        ...(input.toDate ? { lte: new Date(input.toDate) } : {})
-      };
+    if (input.search) {
+      where.offerId = { contains: input.search, mode: 'insensitive' };
+    }
+
+    const createdAtFilter: Prisma.DateTimeFilter = {
+      ...(input.fromDate ? { gte: new Date(input.fromDate) } : {}),
+      ...(input.toDate ? { lte: new Date(input.toDate) } : {})
+    };
+    if (Object.keys(createdAtFilter).length > 0) {
+      where.createdAt = createdAtFilter;
     }
 
     const rows = await this.prisma.booking.findMany({

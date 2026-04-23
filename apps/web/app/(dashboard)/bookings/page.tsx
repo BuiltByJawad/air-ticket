@@ -108,6 +108,7 @@ export default async function BookingsPage({
         </div>
         <BookingExport
           status={status ?? undefined}
+          search={search}
           onExportCsv={exportBookingsCsvAction}
           onExportPdf={exportBookingsPdfAction}
         />

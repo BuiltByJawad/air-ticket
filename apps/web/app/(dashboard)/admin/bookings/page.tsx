@@ -50,6 +50,7 @@ export default async function AdminBookingsPage({
         </div>
         <BookingExport
           status={status}
+          search={search}
           onExportCsv={exportBookingsCsvAction}
           onExportPdf={exportBookingsPdfAction}
         />
