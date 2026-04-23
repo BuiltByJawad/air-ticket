@@ -110,5 +110,46 @@ describe('AuditService', () => {
         })
       );
     });
+
+    it('should filter by search with OR conditions', async () => {
+      await service.listLogs({ search: 'booking' });
+
+      const where = (prisma.auditLog.findMany as jest.Mock).mock.calls[0][0].where;
+      expect(where.OR).toEqual([
+        { action: { contains: 'booking', mode: 'insensitive' } },
+        { resource: { contains: 'booking', mode: 'insensitive' } },
+        { resourceId: { contains: 'booking', mode: 'insensitive' } }
+      ]);
+    });
+
+    it('should filter by fromDate', async () => {
+      await service.listLogs({ fromDate: '2024-01-01' });
+
+      const where = (prisma.auditLog.findMany as jest.Mock).mock.calls[0][0].where;
+      expect(where.createdAt).toEqual({ gte: expect.any(Date) });
+    });
+
+    it('should filter by toDate', async () => {
+      await service.listLogs({ toDate: '2024-12-31' });
+
+      const where = (prisma.auditLog.findMany as jest.Mock).mock.calls[0][0].where;
+      expect(where.createdAt).toEqual({ lte: expect.any(Date) });
+    });
+
+    it('should filter by both fromDate and toDate', async () => {
+      await service.listLogs({ fromDate: '2024-01-01', toDate: '2024-12-31' });
+
+      const where = (prisma.auditLog.findMany as jest.Mock).mock.calls[0][0].where;
+      expect(where.createdAt).toEqual({ gte: expect.any(Date), lte: expect.any(Date) });
+    });
+
+    it('should combine action, search, and date filters', async () => {
+      await service.listLogs({ action: 'booking.create', search: 'offer', fromDate: '2024-01-01', toDate: '2024-12-31' });
+
+      const where = (prisma.auditLog.findMany as jest.Mock).mock.calls[0][0].where;
+      expect(where.action).toBe('booking.create');
+      expect(where.OR).toBeDefined();
+      expect(where.createdAt).toEqual({ gte: expect.any(Date), lte: expect.any(Date) });
+    });
   });
 });
