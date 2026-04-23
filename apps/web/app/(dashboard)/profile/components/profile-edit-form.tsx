@@ -1,12 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import { AlertCircle, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { FormField } from '@/components/shared/form-field';
-import { updateProfileAction, type ProfileActionResult } from '../actions';
+import { updateProfileAction } from '../actions';
 
 interface ProfileEditFormProps {
   initialName: string | null;
@@ -20,7 +19,6 @@ export function ProfileEditForm({ initialName, initialPhone }: ProfileEditFormPr
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [result, setResult] = useState<ProfileActionResult | null>(null);
   const [pending, setPending] = useState(false);
 
   function clearField(field: string) {
@@ -56,14 +54,11 @@ export function ProfileEditForm({ initialName, initialPhone }: ProfileEditFormPr
 
   async function handleSubmit(ev: React.FormEvent<HTMLFormElement>) {
     ev.preventDefault();
-    setResult(null);
-
     if (!validate()) return;
 
     setPending(true);
     const formData = new FormData(ev.currentTarget);
     const actionResult = await updateProfileAction(formData);
-    setResult(actionResult);
     setPending(false);
 
     if (actionResult.success) {
@@ -78,19 +73,6 @@ export function ProfileEditForm({ initialName, initialPhone }: ProfileEditFormPr
 
   return (
     <>
-      {result && (
-        <div className={`mb-4 flex items-center gap-2 rounded-md border p-3 text-sm ${
-          result.success
-            ? 'border-green-500/50 bg-green-500/10 text-green-700 dark:text-green-400'
-            : 'border-destructive/50 bg-destructive/10 text-destructive'
-        }`}>
-          {result.success
-            ? <CheckCircle2 className="h-4 w-4 shrink-0" />
-            : <AlertCircle className="h-4 w-4 shrink-0" />
-          }
-          {result.success ? 'Profile updated successfully' : result.error}
-        </div>
-      )}
       <form onSubmit={handleSubmit} className="space-y-4">
         <FormField id="name" label="Full Name">
           <Input
