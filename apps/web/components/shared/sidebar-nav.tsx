@@ -60,14 +60,14 @@ export function SidebarNav({ user }: { user: NavUser }) {
           <Plane className="h-6 w-6" />
           <span>AirTicket</span>
         </Link>
-        <button onClick={() => setMobileOpen(!mobileOpen)} className="p-1">
+        <button onClick={() => setMobileOpen(!mobileOpen)} className="p-1" aria-label={mobileOpen ? 'Close menu' : 'Open menu'}>
           {mobileOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
         </button>
       </div>
 
       {/* Mobile nav overlay */}
       {mobileOpen && (
-        <div className="fixed inset-0 z-40 bg-black/50 lg:hidden" onClick={() => setMobileOpen(false)}>
+        <div className="fixed inset-0 z-40 bg-black/50 lg:hidden" onClick={() => setMobileOpen(false)} role="dialog" aria-modal="true" aria-label="Navigation menu">
           <nav className="flex h-full w-64 flex-col bg-card p-4" onClick={(e) => e.stopPropagation()}>
             <NavContent pathname={pathname} user={user} onNav={() => setMobileOpen(false)} />
           </nav>

@@ -53,7 +53,7 @@ export function AgencyActions({ id, name }: { id: string; name: string }) {
     <div className="flex items-center gap-1">
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
         <DialogTrigger asChild>
-          <Button variant="ghost" size="icon" className="h-8 w-8">
+          <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Edit agency">
             <Pencil className="h-4 w-4" />
           </Button>
         </DialogTrigger>
@@ -81,7 +81,7 @@ export function AgencyActions({ id, name }: { id: string; name: string }) {
 
       <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <DialogTrigger asChild>
-          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive">
+          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" aria-label="Delete agency">
             <Trash2 className="h-4 w-4" />
           </Button>
         </DialogTrigger>

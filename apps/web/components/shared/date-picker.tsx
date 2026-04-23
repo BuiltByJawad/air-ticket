@@ -131,13 +131,13 @@ export function DatePicker({
       {open && (
         <div className="absolute z-50 mt-1 w-[calc(100vw-2rem)] max-w-72 rounded-lg border bg-popover p-3 shadow-lg animate-in fade-in-0 zoom-in-95">
           <div className="flex items-center justify-between mb-3">
-            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={prevMonth} type="button">
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={prevMonth} type="button" aria-label="Previous month">
               <ChevronLeft className="h-4 w-4" />
             </Button>
             <span className="text-sm font-semibold">
               {MONTHS[viewMonth]} {viewYear}
             </span>
-            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={nextMonth} type="button">
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={nextMonth} type="button" aria-label="Next month">
               <ChevronRight className="h-4 w-4" />
             </Button>
           </div>

@@ -51,7 +51,7 @@ export function BookingActions({ id, status }: { id: string; status: 'draft' | '
       {status === 'draft' && (
         <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
           <DialogTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-8 w-8 text-green-600 hover:text-green-700">
+            <Button variant="ghost" size="icon" className="h-8 w-8 text-green-600 hover:text-green-700" aria-label="Confirm booking">
               <CheckCircle className="h-4 w-4" />
             </Button>
           </DialogTrigger>
@@ -77,7 +77,7 @@ export function BookingActions({ id, status }: { id: string; status: 'draft' | '
       {status !== 'cancelled' && (
         <Dialog open={cancelOpen} onOpenChange={setCancelOpen}>
           <DialogTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive">
+            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" aria-label="Cancel booking">
               <XCircle className="h-4 w-4" />
             </Button>
           </DialogTrigger>

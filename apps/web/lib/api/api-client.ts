@@ -170,8 +170,9 @@ type CacheStrategy =
 
 const SENSITIVE: CacheStrategy = { cache: 'no-store' };
 const REFERENCE: CacheStrategy = { cache: 'force-cache' };
+const FREQUENT: CacheStrategy = { next: { revalidate: 60 } };
 
-async function apiFetch(path: string, init: RequestInit, strategy: CacheStrategy = SENSITIVE): Promise<Response> {
+async function apiFetch(path: string, init: RequestInit, strategy: CacheStrategy): Promise<Response> {
   const env = loadWebEnv();
   const url = new URL(path, env.API_BASE_URL);
 
@@ -196,7 +197,7 @@ export async function loginWithPassword(input: {
   const res = await apiFetch('/auth/login', {
     method: 'POST',
     body: JSON.stringify(input)
-  });
+  }, SENSITIVE);
 
   if (!res.ok) {
     throw await toApiError(res, 'Invalid credentials');
@@ -212,7 +213,7 @@ export async function fetchMe(accessToken: string): Promise<MeResponse> {
     headers: {
       Authorization: `Bearer ${accessToken}`
     }
-  });
+  }, SENSITIVE);
 
   if (!res.ok) {
     throw await toApiError(res, 'Unauthorized');
@@ -229,7 +230,7 @@ export async function updateProfile(accessToken: string, input: { name?: string;
       Authorization: `Bearer ${accessToken}`
     },
     body: JSON.stringify(input)
-  });
+  }, SENSITIVE);
 
   if (!res.ok) {
     throw await toApiError(res, 'Failed to update profile');
@@ -249,7 +250,7 @@ export async function searchFlights(
       Authorization: `Bearer ${accessToken}`
     },
     body: JSON.stringify(input)
-  });
+  }, SENSITIVE);
 
   if (!res.ok) {
     throw await toApiError(res, 'Failed to search flights');
@@ -266,7 +267,7 @@ export async function quoteFlight(accessToken: string, input: { offerId: string 
       Authorization: `Bearer ${accessToken}`
     },
     body: JSON.stringify(input)
-  });
+  }, SENSITIVE);
 
   if (!res.ok) {
     throw await toApiError(res, 'Failed to quote flight');
@@ -286,7 +287,7 @@ export async function createBooking(
       Authorization: `Bearer ${accessToken}`
     },
     body: JSON.stringify(input)
-  });
+  }, SENSITIVE);
 
   if (!res.ok) {
     throw await toApiError(res, 'Failed to create booking');
@@ -302,7 +303,7 @@ export async function getBooking(accessToken: string, id: string): Promise<Booki
     headers: {
       Authorization: `Bearer ${accessToken}`
     }
-  });
+  }, SENSITIVE);
 
   if (!res.ok) {
     throw await toApiError(res, 'Failed to get booking');
@@ -318,7 +319,7 @@ export async function confirmBooking(accessToken: string, id: string): Promise<B
     headers: {
       Authorization: `Bearer ${accessToken}`
     }
-  });
+  }, SENSITIVE);
 
   if (!res.ok) {
     throw await toApiError(res, 'Failed to confirm booking');
@@ -334,7 +335,7 @@ export async function cancelBooking(accessToken: string, id: string): Promise<Bo
     headers: {
       Authorization: `Bearer ${accessToken}`
     }
-  });
+  }, SENSITIVE);
 
   if (!res.ok) {
     throw await toApiError(res, 'Failed to cancel booking');
@@ -366,7 +367,7 @@ export async function listBookings(
     headers: {
       Authorization: `Bearer ${accessToken}`
     }
-  });
+  }, FREQUENT);
 
   if (!res.ok) {
     throw await toApiError(res, 'Failed to list bookings');
@@ -404,7 +405,7 @@ export async function listBookingsPaged(
     headers: {
       Authorization: `Bearer ${accessToken}`
     }
-  });
+  }, FREQUENT);
 
   if (!res.ok) {
     throw await toApiError(res, 'Failed to list bookings');
@@ -434,7 +435,7 @@ export async function registerWithPassword(input: {
   const res = await apiFetch('/auth/register', {
     method: 'POST',
     body: JSON.stringify(input)
-  });
+  }, SENSITIVE);
 
   if (!res.ok) {
     throw await toApiError(res, 'Registration failed');
@@ -471,7 +472,7 @@ export async function listAgencies(accessToken: string): Promise<AdminAgency[]> 
   const res = await apiFetch('/admin/agencies', {
     method: 'GET',
     headers: { Authorization: `Bearer ${accessToken}` }
-  });
+  }, FREQUENT);
   if (!res.ok) throw await toApiError(res, 'Failed to list agencies');
   const data = await parseApiResponse<unknown>(res);
   return (Array.isArray(data) ? data : []).map(normalizeAdminAgency);
@@ -491,7 +492,7 @@ export async function listAgenciesPaged(
   const res = await apiFetch(url, {
     method: 'GET',
     headers: { Authorization: `Bearer ${accessToken}` }
-  });
+  }, FREQUENT);
   if (!res.ok) throw await toApiError(res, 'Failed to list agencies');
   const data = await parseApiResponse<unknown>(res);
   return normalizePaginatedResult(data, normalizeAdminAgency);
@@ -501,7 +502,7 @@ export async function listUsers(accessToken: string): Promise<AdminUser[]> {
   const res = await apiFetch('/admin/users', {
     method: 'GET',
     headers: { Authorization: `Bearer ${accessToken}` }
-  });
+  }, FREQUENT);
   if (!res.ok) throw await toApiError(res, 'Failed to list users');
   const data = await parseApiResponse<unknown>(res);
   return (Array.isArray(data) ? data : []).map(normalizeAdminUser);
@@ -522,7 +523,7 @@ export async function listUsersPaged(
   const res = await apiFetch(url, {
     method: 'GET',
     headers: { Authorization: `Bearer ${accessToken}` }
-  });
+  }, FREQUENT);
   if (!res.ok) throw await toApiError(res, 'Failed to list users');
   const data = await parseApiResponse<unknown>(res);
   return normalizePaginatedResult(data, normalizeAdminUser);
@@ -545,7 +546,7 @@ export async function createAgency(accessToken: string, input: { name: string })
     method: 'POST',
     headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
     body: JSON.stringify(input)
-  });
+  }, SENSITIVE);
   if (!res.ok) throw await toApiError(res, 'Failed to create agency');
   const data = await parseApiResponse<unknown>(res);
   return normalizeAdminAgency(data);
@@ -556,7 +557,7 @@ export async function createAgent(accessToken: string, input: { agencyId: string
     method: 'POST',
     headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
     body: JSON.stringify(input)
-  });
+  }, SENSITIVE);
   if (!res.ok) throw await toApiError(res, 'Failed to create agent');
   const data = await parseApiResponse<unknown>(res);
   return normalizeAdminUser(data);
@@ -571,7 +572,7 @@ export async function updateAgency(
     method: 'PATCH',
     headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
     body: JSON.stringify(input)
-  });
+  }, SENSITIVE);
   if (!res.ok) throw await toApiError(res, 'Failed to update agency');
   const data = await parseApiResponse<unknown>(res);
   return normalizeAdminAgency(data);
@@ -581,7 +582,7 @@ export async function deleteAgency(accessToken: string, id: string): Promise<Adm
   const res = await apiFetch(`/admin/agencies/${id}`, {
     method: 'DELETE',
     headers: { Authorization: `Bearer ${accessToken}` }
-  });
+  }, SENSITIVE);
   if (!res.ok) throw await toApiError(res, 'Failed to delete agency');
   const data = await parseApiResponse<unknown>(res);
   return normalizeAdminAgency(data);
@@ -596,7 +597,7 @@ export async function updateUser(
     method: 'PATCH',
     headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
     body: JSON.stringify(input)
-  });
+  }, SENSITIVE);
   if (!res.ok) throw await toApiError(res, 'Failed to update user');
   const data = await parseApiResponse<unknown>(res);
   return normalizeAdminUser(data);
@@ -606,7 +607,7 @@ export async function deleteUser(accessToken: string, id: string): Promise<Admin
   const res = await apiFetch(`/admin/users/${id}`, {
     method: 'DELETE',
     headers: { Authorization: `Bearer ${accessToken}` }
-  });
+  }, SENSITIVE);
   if (!res.ok) throw await toApiError(res, 'Failed to delete user');
   const data = await parseApiResponse<unknown>(res);
   return normalizeAdminUser(data);
@@ -642,7 +643,7 @@ export async function listAuditLogsPaged(
   const res = await apiFetch(url, {
     method: 'GET',
     headers: { Authorization: `Bearer ${accessToken}` }
-  });
+  }, FREQUENT);
   if (!res.ok) throw await toApiError(res, 'Failed to list audit logs');
   const data = await parseApiResponse<unknown>(res);
   return normalizePaginatedResult(data, normalizeAuditLog);
@@ -679,7 +680,7 @@ export async function getAdminStats(accessToken: string): Promise<AdminStats> {
   const res = await apiFetch('/admin/stats', {
     method: 'GET',
     headers: { Authorization: `Bearer ${accessToken}` }
-  });
+  }, FREQUENT);
   if (!res.ok) throw await toApiError(res, 'Failed to get admin stats');
   const data = await parseApiResponse<unknown>(res);
   return normalizeAdminStats(data);
@@ -698,7 +699,7 @@ export async function getAgentStats(accessToken: string): Promise<AgentStats> {
   const res = await apiFetch('/agent/stats', {
     method: 'GET',
     headers: { Authorization: `Bearer ${accessToken}` }
-  });
+  }, FREQUENT);
   if (!res.ok) throw await toApiError(res, 'Failed to get agent stats');
   const data = await parseApiResponse<unknown>(res);
   return normalizeAgentStats(data);
@@ -723,7 +724,7 @@ export async function getAgencyDetail(accessToken: string, id: string, agentLimi
   const res = await apiFetch(`/admin/agencies/${encodeURIComponent(id)}/detail${qs ? `?${qs}` : ''}`, {
     method: 'GET',
     headers: { Authorization: `Bearer ${accessToken}` }
-  });
+  }, SENSITIVE);
   if (!res.ok) throw await toApiError(res, 'Failed to get agency detail');
   const data = await parseApiResponse<unknown>(res);
   return normalizeAgencyDetail(data);
@@ -747,7 +748,7 @@ export async function getUserDetail(accessToken: string, id: string): Promise<Us
   const res = await apiFetch(`/admin/users/${encodeURIComponent(id)}/detail`, {
     method: 'GET',
     headers: { Authorization: `Bearer ${accessToken}` }
-  });
+  }, SENSITIVE);
   if (!res.ok) throw await toApiError(res, 'Failed to get user detail');
   const data = await parseApiResponse<unknown>(res);
   return normalizeUserDetail(data);
@@ -758,7 +759,7 @@ export async function forgotPassword(email: string): Promise<{ message: string; 
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email })
-  });
+  }, SENSITIVE);
   if (!res.ok) throw await toApiError(res, 'Failed to request password reset');
   return parseApiResponse<{ message: string; token?: string }>(res);
 }
@@ -768,7 +769,7 @@ export async function resetPassword(token: string, password: string): Promise<{ 
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ token, password })
-  });
+  }, SENSITIVE);
   if (!res.ok) throw await toApiError(res, 'Failed to reset password');
   return parseApiResponse<{ message: string }>(res);
 }
