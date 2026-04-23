@@ -4,7 +4,7 @@ import type { NextRequest } from 'next/server';
 const ADMIN_ROUTES = ['/admin'];
 const AGENT_ONLY_ROUTES = ['/flights', '/dashboard'];
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const sessionToken = request.cookies.get('session_token')?.value;
   const { pathname } = request.nextUrl;
 
