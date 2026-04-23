@@ -59,13 +59,21 @@ function isTravelerArray(data: unknown): data is TravelerData[] {
   return Array.isArray(data) && data.length > 0 && typeof data[0] === 'object' && data[0] !== null;
 }
 
-export default async function BookingDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function BookingDetailPage({
+  params,
+  searchParams
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
   const token = await getSessionToken();
   if (!token) {
     redirect('/login');
   }
 
   const { id } = await params;
+  const sp = await searchParams;
+  const backHref = typeof sp.from === 'string' ? sp.from : '/bookings';
 
   let booking: Awaited<ReturnType<typeof getBooking>>;
   try {
@@ -93,7 +101,7 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
       <BookingToast />
       <div className="flex items-center gap-4">
         <Link
-          href="/bookings"
+          href={backHref}
           className="flex h-9 w-9 items-center justify-center rounded-md border text-muted-foreground hover:bg-accent transition-colors"
         >
           <ArrowLeft className="h-4 w-4" />

@@ -70,7 +70,7 @@ export default async function AdminBookingsPage({
             <div className="space-y-3">
               {result.items.map((b) => (
                 <div key={b.id} className="flex items-center justify-between rounded-lg border p-3">
-                  <Link href={`/bookings/${b.id}`} className="flex items-center justify-between flex-1 min-w-0 hover:bg-accent transition-colors -m-3 p-3">
+                  <Link href={`/bookings/${b.id}?from=/admin/bookings`} className="flex items-center justify-between flex-1 min-w-0 hover:bg-accent transition-colors -m-3 p-3">
                     <div className="min-w-0">
                       <p className="font-medium text-sm truncate">{b.offerId}</p>
                       <div className="flex items-center gap-2 text-xs text-muted-foreground">
