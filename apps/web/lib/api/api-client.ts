@@ -573,7 +573,7 @@ export async function deleteAgency(accessToken: string, id: string): Promise<Adm
 export async function updateUser(
   accessToken: string,
   id: string,
-  input: { name?: string; phone?: string; agencyId?: string }
+  input: { name?: string; phone?: string; agencyId?: string; role?: 'agent' | 'admin' }
 ): Promise<AdminUser> {
   const res = await apiFetch(`/admin/users/${id}`, {
     method: 'PATCH',

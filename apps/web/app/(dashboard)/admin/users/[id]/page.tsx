@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { RoleChangeForm } from './components/role-change-form';
 
 export default async function UserDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const token = await getSessionToken();
@@ -44,7 +45,10 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
             <Shield className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <Badge variant={user.role === 'admin' ? 'default' : 'secondary'} className="capitalize">{user.role}</Badge>
+            <div className="flex items-center gap-2">
+              <Badge variant={user.role === 'admin' ? 'default' : 'secondary'} className="capitalize">{user.role}</Badge>
+              <RoleChangeForm userId={user.id} currentRole={user.role} userName={user.name || user.email} />
+            </div>
           </CardContent>
         </Card>
 

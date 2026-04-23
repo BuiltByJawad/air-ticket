@@ -38,6 +38,7 @@ const adminNavItems = [
   { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/admin/agencies', label: 'Agencies', icon: Building2 },
   { href: '/admin/users', label: 'Users', icon: Users },
+  { href: '/admin/roles', label: 'Roles & Access', icon: ShieldCheck },
   { href: '/admin/bookings', label: 'Bookings', icon: BookOpen },
   { href: '/admin/audit', label: 'Audit Logs', icon: ShieldCheck },
   { href: '/profile', label: 'Profile', icon: UserCircle }

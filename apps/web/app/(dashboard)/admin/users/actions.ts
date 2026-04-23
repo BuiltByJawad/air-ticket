@@ -13,12 +13,14 @@ export async function createAgentAction(data: { agencyId: string; email: string;
   revalidatePath('/admin');
 }
 
-export async function updateUserAction(id: string, data: { name?: string; phone?: string; agencyId?: string }) {
+export async function updateUserAction(id: string, data: { name?: string; phone?: string; agencyId?: string; role?: 'agent' | 'admin' }) {
   const token = await getSessionToken();
   if (!token) throw new Error('Not authenticated');
 
   await updateUser(token, id, data);
   revalidatePath('/admin/users');
+  revalidatePath(`/admin/users/${id}`);
+  revalidatePath('/admin');
 }
 
 export async function deleteUserAction(id: string) {

@@ -216,15 +216,21 @@ export class UsersService {
     };
   }
 
-  async update(id: string, input: { name?: string; phone?: string; agencyId?: string | null }): Promise<UserPublic> {
+  async update(id: string, input: { name?: string; phone?: string; agencyId?: string | null; role?: UserRole }): Promise<UserPublic> {
     const existing = await this.prisma.user.findUnique({ where: { id } });
     if (!existing) {
       throw new NotFoundException('User not found');
     }
 
+    // When changing role to admin, clear agencyId (admins don't belong to agencies)
+    const data: Record<string, unknown> = { ...input };
+    if (input.role === 'admin') {
+      data.agencyId = null;
+    }
+
     const updated = await this.prisma.user.update({
       where: { id },
-      data: { ...input },
+      data,
       select: { id: true, email: true, name: true, phone: true, role: true, createdAt: true, agencyId: true }
     });
 

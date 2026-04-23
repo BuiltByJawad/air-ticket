@@ -84,7 +84,7 @@ export class AdminUsersController {
       resourceId: id,
       userId: caller.sub,
       requestId: req.requestId,
-      metadata: { name: body.name, phone: body.phone, agencyId: body.agencyId }
+      metadata: { name: body.name, phone: body.phone, agencyId: body.agencyId, role: body.role }
     });
     return result;
   }
