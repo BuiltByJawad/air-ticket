@@ -12,7 +12,10 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
   if (!token) return null;
 
   const { id } = await params;
-  const user = await getUserDetail(token, id).catch(() => null);
+  const user = await getUserDetail(token, id).catch((err) => {
+    console.error('Failed to fetch user detail:', err);
+    return null;
+  });
 
   if (!user) notFound();
 

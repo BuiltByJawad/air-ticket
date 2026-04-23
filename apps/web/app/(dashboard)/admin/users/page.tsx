@@ -27,14 +27,14 @@ export default async function AdminUsersPage({
   const role = typeof sp.role === 'string' ? sp.role : undefined;
 
   const [result, agenciesResult] = await Promise.all([
-    listUsersPaged(token, { limit, offset, search, role }).catch(() => ({
-      items: [],
-      meta: { total: 0, limit, offset }
-    })),
-    listAgenciesPaged(token, { limit: 100 }).catch(() => ({
-      items: [],
-      meta: { total: 0, limit: 100, offset: 0 }
-    }))
+    listUsersPaged(token, { limit, offset, search, role }).catch((err) => {
+      console.error('Failed to fetch users:', err);
+      return { items: [], meta: { total: 0, limit, offset } };
+    }),
+    listAgenciesPaged(token, { limit: 100 }).catch((err) => {
+      console.error('Failed to fetch agencies:', err);
+      return { items: [], meta: { total: 0, limit: 100, offset: 0 } };
+    })
   ]);
 
   return (

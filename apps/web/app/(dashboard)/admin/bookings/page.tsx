@@ -30,10 +30,10 @@ export default async function AdminBookingsPage({
   const fromDate = typeof sp.fromDate === 'string' ? sp.fromDate : undefined;
   const toDate = typeof sp.toDate === 'string' ? sp.toDate : undefined;
 
-  const result = await listBookingsPaged(token, { limit, offset, status, search, fromDate, toDate }).catch(() => ({
-    items: [],
-    meta: { total: 0, limit, offset }
-  }));
+  const result = await listBookingsPaged(token, { limit, offset, status, search, fromDate, toDate }).catch((err) => {
+    console.error('Failed to fetch bookings:', err);
+    return { items: [], meta: { total: 0, limit, offset } };
+  });
 
   return (
     <div className="space-y-6">

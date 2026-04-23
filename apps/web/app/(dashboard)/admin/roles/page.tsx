@@ -10,14 +10,14 @@ export default async function AdminRolesPage() {
   if (!token) return null;
 
   const [agentsResult, adminsResult] = await Promise.all([
-    listUsersPaged(token, { role: 'agent', limit: 100 }).catch(() => ({
-      items: [],
-      meta: { total: 0, limit: 100, offset: 0 }
-    })),
-    listUsersPaged(token, { role: 'admin', limit: 100 }).catch(() => ({
-      items: [],
-      meta: { total: 0, limit: 100, offset: 0 }
-    }))
+    listUsersPaged(token, { role: 'agent', limit: 100 }).catch((err) => {
+      console.error('Failed to fetch agents:', err);
+      return { items: [], meta: { total: 0, limit: 100, offset: 0 } };
+    }),
+    listUsersPaged(token, { role: 'admin', limit: 100 }).catch((err) => {
+      console.error('Failed to fetch admins:', err);
+      return { items: [], meta: { total: 0, limit: 100, offset: 0 } };
+    })
   ]);
 
   const agentCount = agentsResult.meta.total;

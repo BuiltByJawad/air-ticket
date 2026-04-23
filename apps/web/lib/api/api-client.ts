@@ -124,8 +124,8 @@ async function toApiError(res: Response, message: string): Promise<ApiError> {
         details = JSON.stringify(body);
       }
     }
-  } catch {
-    // ignore
+  } catch (err) {
+    console.error('Failed to parse API error response:', err);
   }
 
   const fullMessage = details ? `${message}: ${details}` : message;

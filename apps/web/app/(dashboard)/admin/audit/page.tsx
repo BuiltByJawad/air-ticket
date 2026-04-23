@@ -28,10 +28,10 @@ export default async function AuditLogsPage({
   const fromDate = typeof sp.fromDate === 'string' ? sp.fromDate : undefined;
   const toDate = typeof sp.toDate === 'string' ? sp.toDate : undefined;
 
-  const result = await listAuditLogsPaged(token, { limit, offset, action, resource, search, fromDate, toDate }).catch(() => ({
-    items: [],
-    meta: { total: 0, limit, offset }
-  }));
+  const result = await listAuditLogsPaged(token, { limit, offset, action, resource, search, fromDate, toDate }).catch((err) => {
+    console.error('Failed to fetch audit logs:', err);
+    return { items: [], meta: { total: 0, limit, offset } };
+  });
 
   return (
     <div className="space-y-6">

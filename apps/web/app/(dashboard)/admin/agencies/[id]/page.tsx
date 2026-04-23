@@ -23,7 +23,10 @@ export default async function AgencyDetailPage({
   const sp = await searchParams;
   const agentOffset = Number(sp.agentOffset) || 0;
 
-  const agency = await getAgencyDetail(token, id, AGENT_LIMIT, agentOffset).catch(() => null);
+  const agency = await getAgencyDetail(token, id, AGENT_LIMIT, agentOffset).catch((err) => {
+    console.error('Failed to fetch agency detail:', err);
+    return null;
+  });
 
   if (!agency) notFound();
 

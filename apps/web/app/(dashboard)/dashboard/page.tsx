@@ -9,14 +9,17 @@ export default async function DashboardHomePage() {
   const token = await getSessionToken();
 
   const stats = token
-    ? await getAgentStats(token).catch(() => ({
-        totalBookings: 0,
-        bookingsByStatus: { draft: 0, confirmed: 0, cancelled: 0 },
-        totalRevenue: '0.00',
-        revenueCurrency: 'USD',
-        recentBookingsCount: 0,
-        monthlyRevenue: []
-      }))
+    ? await getAgentStats(token).catch((err) => {
+        console.error('Failed to fetch agent stats:', err);
+        return {
+          totalBookings: 0,
+          bookingsByStatus: { draft: 0, confirmed: 0, cancelled: 0 },
+          totalRevenue: '0.00',
+          revenueCurrency: 'USD',
+          recentBookingsCount: 0,
+          monthlyRevenue: []
+        };
+      })
     : {
         totalBookings: 0,
         bookingsByStatus: { draft: 0, confirmed: 0, cancelled: 0 },

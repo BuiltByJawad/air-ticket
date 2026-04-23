@@ -23,10 +23,10 @@ export default async function AdminAgenciesPage({
   const offset = Number(sp.offset) || 0;
   const search = typeof sp.search === 'string' ? sp.search : undefined;
 
-  const result = await listAgenciesPaged(token, { limit, offset, search }).catch(() => ({
-    items: [],
-    meta: { total: 0, limit, offset }
-  }));
+  const result = await listAgenciesPaged(token, { limit, offset, search }).catch((err) => {
+    console.error('Failed to fetch agencies:', err);
+    return { items: [], meta: { total: 0, limit, offset } };
+  });
 
   return (
     <div className="space-y-6">

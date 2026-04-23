@@ -2,31 +2,28 @@ import { getAdminStats } from '@/lib/api/api-client';
 import { getSessionToken } from '@/lib/auth/session';
 import { Building2, Users, BookOpen, ShieldCheck, DollarSign, TrendingUp, ChevronRight, Activity } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { BarChart, StatusBar } from '@/components/shared/charts';
 import Link from 'next/link';
 
 export default async function AdminPage() {
   const token = await getSessionToken();
   if (!token) return null;
 
-  const stats = await getAdminStats(token).catch(() => ({
-    totalAgencies: 0,
-    totalUsers: 0,
-    totalAgents: 0,
-    totalBookings: 0,
-    bookingsByStatus: { draft: 0, confirmed: 0, cancelled: 0 },
-    totalRevenue: '0.00',
-    revenueCurrency: 'USD',
-    topAgencies: [],
-    recentBookingsCount: 0,
-    monthlyRevenue: []
-  }));
-
-  const statusEntries = [
-    { label: 'Draft', value: stats.bookingsByStatus.draft, variant: 'warning' as const },
-    { label: 'Confirmed', value: stats.bookingsByStatus.confirmed, variant: 'success' as const },
-    { label: 'Cancelled', value: stats.bookingsByStatus.cancelled, variant: 'destructive' as const }
-  ];
+  const stats = await getAdminStats(token).catch((err) => {
+    console.error('Failed to fetch admin stats:', err);
+    return {
+      totalAgencies: 0,
+      totalUsers: 0,
+      totalAgents: 0,
+      totalBookings: 0,
+      bookingsByStatus: { draft: 0, confirmed: 0, cancelled: 0 },
+      totalRevenue: '0.00',
+      revenueCurrency: 'USD',
+      topAgencies: [],
+      recentBookingsCount: 0,
+      monthlyRevenue: []
+    };
+  });
 
   return (
     <div className="space-y-6">
@@ -115,28 +112,11 @@ export default async function AdminPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
-              {statusEntries.map((s) => {
-                const pct = stats.totalBookings > 0 ? Math.round((s.value / stats.totalBookings) * 100) : 0;
-                return (
-                  <div key={s.label} className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Badge variant={s.variant} className="capitalize text-xs w-20 justify-center">{s.label}</Badge>
-                      <span className="text-sm font-medium">{s.value}</span>
-                    </div>
-                    <div className="flex items-center gap-2 flex-1 ml-4">
-                      <div className="h-2 rounded-full bg-muted flex-1 overflow-hidden">
-                        <div
-                          className={`h-full rounded-full ${s.variant === 'success' ? 'bg-green-500' : s.variant === 'destructive' ? 'bg-red-500' : 'bg-yellow-500'}`}
-                          style={{ width: `${pct}%` }}
-                        />
-                      </div>
-                      <span className="text-xs text-muted-foreground w-8 text-right">{pct}%</span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+            <StatusBar items={[
+              { label: 'Draft', value: stats.bookingsByStatus.draft, total: stats.totalBookings, color: '#eab308' },
+              { label: 'Confirmed', value: stats.bookingsByStatus.confirmed, total: stats.totalBookings, color: '#22c55e' },
+              { label: 'Cancelled', value: stats.bookingsByStatus.cancelled, total: stats.totalBookings, color: '#ef4444' }
+            ]} />
           </CardContent>
         </Card>
       </div>
@@ -150,23 +130,14 @@ export default async function AdminPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
-              {stats.monthlyRevenue.map((m) => {
-                const maxRev = Math.max(...stats.monthlyRevenue.map((x) => parseFloat(x.revenue)), 1);
-                const pct = (parseFloat(m.revenue) / maxRev) * 100;
-                return (
-                  <div key={m.month} className="space-y-1">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="font-medium">{m.month}</span>
-                      <span className="text-muted-foreground">{stats.revenueCurrency} {m.revenue} ({m.bookingCount} bookings)</span>
-                    </div>
-                    <div className="h-2 rounded-full bg-muted overflow-hidden">
-                      <div className="h-full rounded-full bg-primary" style={{ width: `${pct}%` }} />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+            <BarChart
+              data={stats.monthlyRevenue.map((m) => ({
+                label: m.month.slice(5),
+                value: parseFloat(m.revenue),
+                subtitle: `${m.bookingCount} bookings`
+              }))}
+              formatValue={(v) => `${stats.revenueCurrency} ${v.toFixed(2)}`}
+            />
           </CardContent>
         </Card>
       )}

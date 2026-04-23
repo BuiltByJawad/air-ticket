@@ -16,7 +16,8 @@ export async function GET(request: NextRequest) {
   try {
     const results = await suggestAirports(query, token ?? undefined);
     return NextResponse.json(results);
-  } catch {
+  } catch (err) {
+    console.error('Failed to suggest airports:', err);
     return NextResponse.json([], { status: 200 });
   }
 }
