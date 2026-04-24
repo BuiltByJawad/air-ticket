@@ -2,6 +2,7 @@
 
 import { getSessionToken } from '@/lib/auth/session';
 import { confirmBooking, cancelBooking } from '@/lib/api/api-client';
+import { bookingIdSchema, exportBookingsSchema } from '@/lib/validators/schemas';
 import { revalidatePath } from 'next/cache';
 import { loadWebEnv } from '@/lib/config/env';
 
@@ -9,18 +10,24 @@ export async function confirmBookingAction(id: string) {
   const token = await getSessionToken();
   if (!token) throw new Error('Not authenticated');
 
-  await confirmBooking(token, id);
+  const parsed = bookingIdSchema.safeParse(id);
+  if (!parsed.success) throw new Error(parsed.error.issues[0]?.message ?? 'Invalid booking ID');
+
+  await confirmBooking(token, parsed.data);
   revalidatePath('/admin/bookings');
-  revalidatePath(`/bookings/${id}`);
+  revalidatePath(`/bookings/${parsed.data}`);
 }
 
 export async function cancelBookingAction(id: string) {
   const token = await getSessionToken();
   if (!token) throw new Error('Not authenticated');
 
-  await cancelBooking(token, id);
+  const parsed = bookingIdSchema.safeParse(id);
+  if (!parsed.success) throw new Error(parsed.error.issues[0]?.message ?? 'Invalid booking ID');
+
+  await cancelBooking(token, parsed.data);
   revalidatePath('/admin/bookings');
-  revalidatePath(`/bookings/${id}`);
+  revalidatePath(`/bookings/${parsed.data}`);
 }
 
 export async function exportBookingsCsvAction(input: {
@@ -32,18 +39,22 @@ export async function exportBookingsCsvAction(input: {
   const token = await getSessionToken();
   if (!token) return null;
 
+  const parsed = exportBookingsSchema.safeParse(input);
+  if (!parsed.success) return null;
+
   const env = loadWebEnv();
   const params = new URLSearchParams();
-  if (input.status) params.set('status', input.status);
-  if (input.search) params.set('search', input.search);
-  if (input.fromDate) params.set('fromDate', input.fromDate);
-  if (input.toDate) params.set('toDate', input.toDate);
+  if (parsed.data.status) params.set('status', parsed.data.status);
+  if (parsed.data.search) params.set('search', parsed.data.search);
+  if (parsed.data.fromDate) params.set('fromDate', parsed.data.fromDate);
+  if (parsed.data.toDate) params.set('toDate', parsed.data.toDate);
 
   const qs = params.toString();
   const url = `${env.API_BASE_URL}/bookings/export/csv${qs ? `?${qs}` : ''}`;
 
   const res = await fetch(url, {
-    headers: { Authorization: `Bearer ${token}` }
+    headers: { Authorization: `Bearer ${token}` },
+    cache: 'no-store'
   });
 
   if (!res.ok) return null;
@@ -62,18 +73,22 @@ export async function exportBookingsPdfAction(input: {
   const token = await getSessionToken();
   if (!token) return null;
 
+  const parsed = exportBookingsSchema.safeParse(input);
+  if (!parsed.success) return null;
+
   const env = loadWebEnv();
   const params = new URLSearchParams();
-  if (input.status) params.set('status', input.status);
-  if (input.search) params.set('search', input.search);
-  if (input.fromDate) params.set('fromDate', input.fromDate);
-  if (input.toDate) params.set('toDate', input.toDate);
+  if (parsed.data.status) params.set('status', parsed.data.status);
+  if (parsed.data.search) params.set('search', parsed.data.search);
+  if (parsed.data.fromDate) params.set('fromDate', parsed.data.fromDate);
+  if (parsed.data.toDate) params.set('toDate', parsed.data.toDate);
 
   const qs = params.toString();
   const url = `${env.API_BASE_URL}/bookings/export/pdf${qs ? `?${qs}` : ''}`;
 
   const res = await fetch(url, {
-    headers: { Authorization: `Bearer ${token}` }
+    headers: { Authorization: `Bearer ${token}` },
+    cache: 'no-store'
   });
 
   if (!res.ok) return null;

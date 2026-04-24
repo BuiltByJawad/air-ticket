@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { ApiError, updateProfile } from '../../../lib/api/api-client';
 import { getSessionToken } from '../../../lib/auth/session';
+import { profileUpdateSchema } from '../../../lib/validators/schemas';
 
 export type ProfileActionResult =
   | { success: true }
@@ -14,27 +15,25 @@ export async function updateProfileAction(formData: FormData): Promise<ProfileAc
     return { success: false, error: 'Not authenticated' };
   }
 
-  const name = String(formData.get('name') ?? '').trim();
-  const phone = String(formData.get('phone') ?? '').trim();
-  const currentPassword = String(formData.get('currentPassword') ?? '');
-  const password = String(formData.get('password') ?? '');
-  const confirmPassword = String(formData.get('confirmPassword') ?? '');
+  const raw = {
+    name: String(formData.get('name') ?? '').trim(),
+    phone: String(formData.get('phone') ?? '').trim(),
+    currentPassword: String(formData.get('currentPassword') ?? ''),
+    password: String(formData.get('password') ?? ''),
+    confirmPassword: String(formData.get('confirmPassword') ?? '')
+  };
+
+  const parsed = profileUpdateSchema.safeParse(raw);
+  if (!parsed.success) {
+    return { success: false, error: parsed.error.issues[0]?.message ?? 'Invalid input' };
+  }
 
   const input: { name?: string; phone?: string; currentPassword?: string; password?: string } = {};
-  if (name) input.name = name;
-  if (phone) input.phone = phone;
-  if (password) {
-    if (!currentPassword) {
-      return { success: false, error: 'Current password is required to set a new password' };
-    }
-    if (password.length < 8) {
-      return { success: false, error: 'Password must be at least 8 characters' };
-    }
-    if (password !== confirmPassword) {
-      return { success: false, error: 'Passwords do not match' };
-    }
-    input.currentPassword = currentPassword;
-    input.password = password;
+  if (parsed.data.name) input.name = parsed.data.name;
+  if (parsed.data.phone) input.phone = parsed.data.phone;
+  if (parsed.data.password) {
+    input.currentPassword = parsed.data.currentPassword;
+    input.password = parsed.data.password;
   }
 
   if (Object.keys(input).length === 0) {

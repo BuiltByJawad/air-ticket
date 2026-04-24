@@ -3,15 +3,19 @@
 import { redirect } from 'next/navigation';
 import { ApiError, loginWithPassword } from '../../../lib/api/api-client';
 import { setSessionToken } from '../../../lib/auth/session';
-import { isValidEmail } from '../../../lib/validators/email';
+import { loginSchema } from '../../../lib/validators/schemas';
 
 export async function loginAction(formData: FormData): Promise<void> {
-  const email = String(formData.get('email') ?? '').trim();
-  const password = String(formData.get('password') ?? '');
+  const result = loginSchema.safeParse({
+    email: String(formData.get('email') ?? '').trim(),
+    password: String(formData.get('password') ?? '')
+  });
 
-  if (!isValidEmail(email) || password.length < 1) {
+  if (!result.success) {
     redirect('/login?error=invalid_input');
   }
+
+  const { email, password } = result.data;
 
   try {
     const token = await loginWithPassword({ email, password });

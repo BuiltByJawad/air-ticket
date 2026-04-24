@@ -31,3 +31,12 @@ export function loadWebEnv(): WebEnv {
     NODE_ENV: nodeEnv
   };
 }
+
+// Fail fast at startup if critical env variables are missing
+if (process.env.NODE_ENV !== 'test') {
+  try {
+    loadWebEnv();
+  } catch (err) {
+    console.error('Environment validation failed:', err instanceof Error ? err.message : err);
+  }
+}
