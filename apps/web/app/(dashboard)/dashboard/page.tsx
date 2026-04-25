@@ -2,7 +2,10 @@ import type { Metadata } from 'next';
 import { BookOpen, Plane, TrendingUp, DollarSign, PlaneTakeoff, Calendar, Activity } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { BarChart, StatusBar } from '@/components/shared/charts';
+import dynamic from 'next/dynamic';
+
+const BarChart = dynamic(() => import('@/components/shared/charts').then((m) => m.BarChart), { loading: () => <div className="h-32 animate-pulse bg-muted rounded" /> });
+const StatusBar = dynamic(() => import('@/components/shared/charts').then((m) => m.StatusBar), { loading: () => <div className="h-16 animate-pulse bg-muted rounded" /> });
 
 export const metadata: Metadata = { title: 'Dashboard', description: 'Your agency overview and recent activity.' };
 import { getAgentStats, listBookingsPaged } from '@/lib/api/api-client';

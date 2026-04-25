@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { resetPassword } from '@/lib/api/api-client';
+import { resetPasswordSchema } from '@/lib/validators/schemas';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -21,14 +22,17 @@ export default function ResetPasswordPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (password !== confirmPassword) {
-      setError('Passwords do not match');
+    setError('');
+
+    const parsed = resetPasswordSchema.safeParse({ token, password, confirmPassword });
+    if (!parsed.success) {
+      setError(parsed.error.issues[0]?.message ?? 'Invalid input');
       return;
     }
-    setError('');
+
     setLoading(true);
     try {
-      await resetPassword(token, password);
+      await resetPassword(parsed.data.token, parsed.data.password);
       setDone(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to reset password');

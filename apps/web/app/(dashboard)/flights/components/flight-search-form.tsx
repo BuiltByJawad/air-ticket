@@ -4,11 +4,19 @@ import { Search, Users, ArrowRightLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { FormField } from '@/components/shared/form-field';
-import { DatePicker } from '@/components/shared/date-picker';
-import { AirportAutocomplete } from '@/components/shared/airport-autocomplete';
+import dynamic from 'next/dynamic';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useState, Suspense } from 'react';
 import { cn } from '@/lib/utils';
+
+const DatePicker = dynamic(() => import('@/components/shared/date-picker').then((m) => m.DatePicker), {
+  ssr: false,
+  loading: () => <div className="h-10 animate-pulse bg-muted rounded-md" />,
+});
+const AirportAutocomplete = dynamic(() => import('@/components/shared/airport-autocomplete').then((m) => m.AirportAutocomplete), {
+  ssr: false,
+  loading: () => <div className="h-20 animate-pulse bg-muted rounded-md" />,
+});
 
 type TripType = 'oneway' | 'roundtrip';
 

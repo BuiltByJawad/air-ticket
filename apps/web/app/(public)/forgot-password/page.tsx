@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { forgotPassword } from '@/lib/api/api-client';
+import { forgotPasswordSchema } from '@/lib/validators/schemas';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -18,9 +19,16 @@ export default function ForgotPasswordPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError('');
+
+    const parsed = forgotPasswordSchema.safeParse({ email: email.trim() });
+    if (!parsed.success) {
+      setError(parsed.error.issues[0]?.message ?? 'Invalid input');
+      return;
+    }
+
     setLoading(true);
     try {
-      const result = await forgotPassword(email.trim());
+      const result = await forgotPassword(parsed.data.email);
       setSent(true);
       if (result.token) {
         setDevToken(result.token);

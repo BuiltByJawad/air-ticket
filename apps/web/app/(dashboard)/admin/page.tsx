@@ -5,7 +5,11 @@ import { Building2, Users, BookOpen, ShieldCheck, DollarSign, TrendingUp, Chevro
 
 export const metadata: Metadata = { title: 'Admin Dashboard', description: 'Platform overview — agencies, users, bookings, and revenue.' };
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { BarChart, StatusBar } from '@/components/shared/charts';
+import dynamic from 'next/dynamic';
+
+const BarChart = dynamic(() => import('@/components/shared/charts').then((m) => m.BarChart), { loading: () => <div className="h-32 animate-pulse bg-muted rounded" /> });
+const StatusBar = dynamic(() => import('@/components/shared/charts').then((m) => m.StatusBar), { loading: () => <div className="h-16 animate-pulse bg-muted rounded" /> });
+
 import Link from 'next/link';
 
 export default async function AdminPage() {

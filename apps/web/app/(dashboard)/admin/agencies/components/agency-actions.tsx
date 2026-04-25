@@ -64,8 +64,8 @@ export function AgencyActions({ id, name }: { id: string; name: string }) {
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="agency-name">Name</Label>
-              <Input id="agency-name" value={editName} onChange={(e) => setEditName(e.target.value)} />
+              <Label htmlFor="edit-agency-name">Name</Label>
+              <Input id="edit-agency-name" value={editName} onChange={(e) => setEditName(e.target.value)} />
             </div>
           </div>
           <DialogFooter>
