@@ -1,3 +1,5 @@
+// @vitest-environment jsdom
+/// <reference types="@testing-library/jest-dom/vitest" />
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, act, cleanup } from '@testing-library/react';
 import { ThemeToggle } from './theme-toggle';

@@ -15,7 +15,7 @@ import {
   ShieldCheck
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { ThemeToggle } from '@/components/shared/theme-toggle';
 
 type NavUser = {
@@ -48,9 +48,52 @@ const adminNavItems = [
 export function SidebarNav({ user }: { user: NavUser }) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const mobileNavRef = useRef<HTMLElement>(null);
 
   const navItems = user.role === 'admin' ? adminNavItems : agentNavItems;
   const homeHref = user.role === 'admin' ? '/admin' : '/dashboard';
+
+  // Focus trap & Escape key for mobile menu
+  useEffect(() => {
+    if (!mobileOpen) return;
+
+    const nav = mobileNavRef.current;
+    if (nav) {
+      const firstFocusable = nav.querySelector<HTMLElement>('a, button, [tabindex]:not([tabindex="-1"])');
+      firstFocusable?.focus();
+    }
+
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') {
+        setMobileOpen(false);
+        return;
+      }
+      if (e.key !== 'Tab' || !nav) return;
+
+      const focusable = nav.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      );
+      if (focusable.length === 0) return;
+
+      const first = focusable[0]!;
+      const last = focusable[focusable.length - 1]!;
+
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown);
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = '';
+    };
+  }, [mobileOpen]);
 
   return (
     <>
@@ -68,7 +111,7 @@ export function SidebarNav({ user }: { user: NavUser }) {
       {/* Mobile nav overlay */}
       {mobileOpen && (
         <div className="fixed inset-0 z-40 bg-black/50 lg:hidden" onClick={() => setMobileOpen(false)} role="dialog" aria-modal="true" aria-label="Navigation menu">
-          <nav className="flex h-full w-64 flex-col bg-card p-4" onClick={(e) => e.stopPropagation()}>
+          <nav ref={mobileNavRef} className="flex h-full w-64 flex-col bg-card p-4" onClick={(e) => e.stopPropagation()}>
             <NavContent pathname={pathname} user={user} onNav={() => setMobileOpen(false)} />
           </nav>
         </div>
@@ -137,6 +180,7 @@ function NavContent({
         <form action="/logout" method="get">
           <button
             type="submit"
+            aria-label="Sign out"
             className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
           >
             <LogOut className="h-4 w-4" />

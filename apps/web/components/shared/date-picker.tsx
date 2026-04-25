@@ -69,9 +69,19 @@ export function DatePicker({
         setOpen(false);
       }
     }
+    function handleEscape(e: KeyboardEvent) {
+      if (e.key === 'Escape' && open) {
+        e.stopPropagation();
+        setOpen(false);
+      }
+    }
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+    document.addEventListener('keydown', handleEscape);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [open]);
 
   const today = new Date();
   const todayISO = toISO(today.getFullYear(), today.getMonth(), today.getDate());
@@ -115,6 +125,8 @@ export function DatePicker({
         type="button"
         id={id}
         onClick={() => setOpen(!open)}
+        aria-haspopup="dialog"
+        aria-expanded={open}
         className={cn(
           'flex h-10 w-full items-center rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background',
           'focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2',
@@ -129,7 +141,7 @@ export function DatePicker({
       <input type="hidden" name={name} value={selectedDate} />
 
       {open && (
-        <div className="absolute z-50 mt-1 w-[calc(100vw-2rem)] max-w-72 rounded-lg border bg-popover p-3 shadow-lg animate-in fade-in-0 zoom-in-95">
+        <div role="dialog" aria-label="Choose a date" className="absolute z-50 mt-1 w-[calc(100vw-2rem)] max-w-72 rounded-lg border bg-popover p-3 shadow-lg animate-in fade-in-0 zoom-in-95">
           <div className="flex items-center justify-between mb-3">
             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={prevMonth} type="button" aria-label="Previous month">
               <ChevronLeft className="h-4 w-4" />
@@ -165,6 +177,7 @@ export function DatePicker({
                   type="button"
                   disabled={isDisabled}
                   onClick={() => selectDay(day)}
+                  aria-label={`${MONTHS[viewMonth]} ${day}, ${viewYear}`}
                   className={cn(
                     'h-8 w-8 rounded-md text-sm transition-colors mx-auto',
                     'hover:bg-accent hover:text-accent-foreground',
