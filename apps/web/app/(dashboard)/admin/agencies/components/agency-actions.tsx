@@ -16,6 +16,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { updateAgencyAction, deleteAgencyAction } from '../actions';
+import { fetchCsrfToken } from '@/components/shared/csrf-token-input';
 
 export function AgencyActions({ id, name }: { id: string; name: string }) {
   const [editOpen, setEditOpen] = useState(false);
@@ -26,7 +27,8 @@ export function AgencyActions({ id, name }: { id: string; name: string }) {
   async function handleUpdate() {
     setLoading(true);
     try {
-      await updateAgencyAction(id, { name: editName });
+      const csrfToken = await fetchCsrfToken();
+      await updateAgencyAction(id, { name: editName }, csrfToken);
       setEditOpen(false);
       toast.success('Agency updated');
     } catch (err) {
@@ -39,7 +41,8 @@ export function AgencyActions({ id, name }: { id: string; name: string }) {
   async function handleDelete() {
     setLoading(true);
     try {
-      await deleteAgencyAction(id);
+      const csrfToken = await fetchCsrfToken();
+      await deleteAgencyAction(id, csrfToken);
       setDeleteOpen(false);
       toast.success('Agency deleted');
     } catch (err) {

@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { updateUserAction } from '../../actions';
+import { fetchCsrfToken } from '@/components/shared/csrf-token-input';
 
 export function RoleChangeForm({
   userId,
@@ -36,7 +37,8 @@ export function RoleChangeForm({
     if (!isChanged) return;
     setLoading(true);
     try {
-      await updateUserAction(userId, { role: newRole });
+      const csrfToken = await fetchCsrfToken();
+      await updateUserAction(userId, { role: newRole }, csrfToken);
       setOpen(false);
       toast.success(`Role changed to ${newRole}`);
     } catch (err) {

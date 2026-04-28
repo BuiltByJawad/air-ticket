@@ -1,11 +1,14 @@
 'use server';
 
 import { getSessionToken } from '@/lib/auth/session';
+import { validateCsrfToken } from '@/lib/auth/csrf';
 import { createAgent, updateUser, deleteUser } from '@/lib/api/api-client';
 import { createAgentSchema, updateUserSchema } from '@/lib/validators/schemas';
 import { revalidatePath } from 'next/cache';
 
-export async function createAgentAction(data: { agencyId: string; email: string; password: string }) {
+export async function createAgentAction(data: { agencyId: string; email: string; password: string }, csrfToken: string) {
+  const csrfOk = await validateCsrfToken(csrfToken);
+  if (!csrfOk) throw new Error('Invalid CSRF token');
   const token = await getSessionToken();
   if (!token) throw new Error('Not authenticated');
 
@@ -17,7 +20,9 @@ export async function createAgentAction(data: { agencyId: string; email: string;
   revalidatePath('/admin');
 }
 
-export async function updateUserAction(id: string, data: { name?: string; phone?: string; agencyId?: string; role?: 'agent' | 'admin' }) {
+export async function updateUserAction(id: string, data: { name?: string; phone?: string; agencyId?: string; role?: 'agent' | 'admin' }, csrfToken: string) {
+  const csrfOk = await validateCsrfToken(csrfToken);
+  if (!csrfOk) throw new Error('Invalid CSRF token');
   const token = await getSessionToken();
   if (!token) throw new Error('Not authenticated');
 
@@ -30,7 +35,9 @@ export async function updateUserAction(id: string, data: { name?: string; phone?
   revalidatePath('/admin');
 }
 
-export async function deleteUserAction(id: string) {
+export async function deleteUserAction(id: string, csrfToken: string) {
+  const csrfOk = await validateCsrfToken(csrfToken);
+  if (!csrfOk) throw new Error('Invalid CSRF token');
   const token = await getSessionToken();
   if (!token) throw new Error('Not authenticated');
 

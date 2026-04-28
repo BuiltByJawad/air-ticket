@@ -16,6 +16,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { createAgencyAction } from '../actions';
+import { fetchCsrfToken } from '@/components/shared/csrf-token-input';
 
 export function CreateAgencyForm() {
   const [open, setOpen] = useState(false);
@@ -28,7 +29,8 @@ export function CreateAgencyForm() {
     setError('');
     setLoading(true);
     try {
-      await createAgencyAction({ name: name.trim() });
+      const csrfToken = await fetchCsrfToken();
+      await createAgencyAction({ name: name.trim() }, csrfToken);
       setName('');
       setOpen(false);
       toast.success('Agency created');

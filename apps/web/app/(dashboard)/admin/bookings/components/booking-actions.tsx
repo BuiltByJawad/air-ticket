@@ -14,6 +14,7 @@ import {
   DialogTrigger
 } from '@/components/ui/dialog';
 import { confirmBookingAction, cancelBookingAction } from '../actions';
+import { fetchCsrfToken } from '@/components/shared/csrf-token-input';
 
 export function BookingActions({ id, status }: { id: string; status: 'draft' | 'confirmed' | 'cancelled' }) {
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -23,7 +24,8 @@ export function BookingActions({ id, status }: { id: string; status: 'draft' | '
   async function handleConfirm() {
     setLoading(true);
     try {
-      await confirmBookingAction(id);
+      const csrfToken = await fetchCsrfToken();
+      await confirmBookingAction(id, csrfToken);
       setConfirmOpen(false);
       toast.success('Booking confirmed');
     } catch (err) {
@@ -36,7 +38,8 @@ export function BookingActions({ id, status }: { id: string; status: 'draft' | '
   async function handleCancel() {
     setLoading(true);
     try {
-      await cancelBookingAction(id);
+      const csrfToken = await fetchCsrfToken();
+      await cancelBookingAction(id, csrfToken);
       setCancelOpen(false);
       toast.success('Booking cancelled');
     } catch (err) {

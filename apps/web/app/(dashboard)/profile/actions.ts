@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { ApiError, updateProfile } from '../../../lib/api/api-client';
 import { getSessionToken } from '../../../lib/auth/session';
+import { validateCsrfToken } from '../../../lib/auth/csrf';
 import { profileUpdateSchema } from '../../../lib/validators/schemas';
 
 export type ProfileActionResult =
@@ -10,6 +11,10 @@ export type ProfileActionResult =
   | { success: false; error: string };
 
 export async function updateProfileAction(formData: FormData): Promise<ProfileActionResult> {
+  const csrfOk = await validateCsrfToken(String(formData.get('_csrf') ?? ''));
+  if (!csrfOk) {
+    return { success: false, error: 'Invalid CSRF token' };
+  }
   const token = await getSessionToken();
   if (!token) {
     return { success: false, error: 'Not authenticated' };

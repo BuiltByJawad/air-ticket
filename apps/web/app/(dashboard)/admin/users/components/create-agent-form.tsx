@@ -16,6 +16,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { createAgentAction } from '../actions';
+import { fetchCsrfToken } from '@/components/shared/csrf-token-input';
 
 interface AgencyOption {
   id: string;
@@ -35,7 +36,8 @@ export function CreateAgentForm({ agencies }: { agencies: AgencyOption[] }) {
     setError('');
     setLoading(true);
     try {
-      await createAgentAction({ agencyId, email: email.trim(), password });
+      const csrfToken = await fetchCsrfToken();
+      await createAgentAction({ agencyId, email: email.trim(), password }, csrfToken);
       setAgencyId('');
       setEmail('');
       setPassword('');

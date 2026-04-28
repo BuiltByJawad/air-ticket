@@ -16,6 +16,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { updateUserAction, deleteUserAction } from '../actions';
+import { fetchCsrfToken } from '@/components/shared/csrf-token-input';
 
 interface AgencyOption {
   id: string;
@@ -49,7 +50,8 @@ export function UserActions({
       if (editName) data.name = editName;
       if (editPhone) data.phone = editPhone;
       if (editAgencyId) data.agencyId = editAgencyId;
-      await updateUserAction(id, data);
+      const csrfToken = await fetchCsrfToken();
+      await updateUserAction(id, data, csrfToken);
       setEditOpen(false);
       toast.success('User updated');
     } catch (err) {
@@ -62,7 +64,8 @@ export function UserActions({
   async function handleDelete() {
     setLoading(true);
     try {
-      await deleteUserAction(id);
+      const csrfToken = await fetchCsrfToken();
+      await deleteUserAction(id, csrfToken);
       setDeleteOpen(false);
       toast.success('User deleted');
     } catch (err) {

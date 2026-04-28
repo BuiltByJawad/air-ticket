@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { FormField } from '@/components/shared/form-field';
+import { CsrfTokenInput } from '@/components/shared/csrf-token-input';
 import { updateProfileAction } from '../actions';
 
 interface ProfileEditFormProps {
@@ -74,6 +75,7 @@ export function ProfileEditForm({ initialName, initialPhone }: ProfileEditFormPr
   return (
     <>
       <form onSubmit={handleSubmit} className="space-y-4">
+        <CsrfTokenInput />
         <FormField id="name" label="Full Name">
           <Input
             id="name"

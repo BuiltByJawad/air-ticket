@@ -1,12 +1,15 @@
 'use server';
 
 import { getSessionToken } from '@/lib/auth/session';
+import { validateCsrfToken } from '@/lib/auth/csrf';
 import { confirmBooking, cancelBooking } from '@/lib/api/api-client';
 import { bookingIdSchema, exportBookingsSchema } from '@/lib/validators/schemas';
 import { revalidatePath } from 'next/cache';
 import { loadWebEnv } from '@/lib/config/env';
 
-export async function confirmBookingAction(id: string) {
+export async function confirmBookingAction(id: string, csrfToken: string) {
+  const csrfOk = await validateCsrfToken(csrfToken);
+  if (!csrfOk) throw new Error('Invalid CSRF token');
   const token = await getSessionToken();
   if (!token) throw new Error('Not authenticated');
 
@@ -18,7 +21,9 @@ export async function confirmBookingAction(id: string) {
   revalidatePath(`/bookings/${parsed.data}`);
 }
 
-export async function cancelBookingAction(id: string) {
+export async function cancelBookingAction(id: string, csrfToken: string) {
+  const csrfOk = await validateCsrfToken(csrfToken);
+  if (!csrfOk) throw new Error('Invalid CSRF token');
   const token = await getSessionToken();
   if (!token) throw new Error('Not authenticated');
 

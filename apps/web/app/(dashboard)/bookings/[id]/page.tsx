@@ -10,6 +10,7 @@ import { getSessionToken } from '@/lib/auth/session';
 import { redirect, notFound } from 'next/navigation';
 import Link from 'next/link';
 import { confirmBookingAction, cancelBookingAction } from './actions';
+import { CsrfTokenInput } from '@/components/shared/csrf-token-input';
 import { BookingToast } from './components/booking-toast';
 
 function fmtTime(iso: string) {
@@ -302,12 +303,14 @@ export default async function BookingDetailPage({
           </CardHeader>
           <CardContent className="flex flex-col sm:flex-row gap-3">
             <form action={confirmBookingAction}>
+              <CsrfTokenInput />
               <input type="hidden" name="bookingId" value={id} />
               <Button type="submit" className="gap-2">
                 <CheckCircle2 className="h-4 w-4" /> Confirm Booking
               </Button>
             </form>
             <form action={cancelBookingAction}>
+              <CsrfTokenInput />
               <input type="hidden" name="bookingId" value={id} />
               <Button type="submit" variant="destructive" className="gap-2">
                 <XCircle className="h-4 w-4" /> Cancel Booking
@@ -324,6 +327,7 @@ export default async function BookingDetailPage({
           </CardHeader>
           <CardContent>
             <form action={cancelBookingAction}>
+              <CsrfTokenInput />
               <input type="hidden" name="bookingId" value={id} />
               <Button type="submit" variant="destructive" className="gap-2">
                 <XCircle className="h-4 w-4" /> Cancel Booking

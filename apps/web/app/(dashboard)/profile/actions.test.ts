@@ -8,6 +8,10 @@ vi.mock('../../../lib/auth/session', () => ({
   getSessionToken: vi.fn()
 }));
 
+vi.mock('../../../lib/auth/csrf', () => ({
+  validateCsrfToken: vi.fn().mockResolvedValue(true)
+}));
+
 vi.mock('../../../lib/api/api-client', () => ({
   ApiError: class ApiError extends Error {
     status: number;
@@ -40,6 +44,7 @@ describe('updateProfileAction', () => {
     mockGetSessionToken.mockResolvedValue(null);
 
     const fd = new FormData();
+    fd.set('_csrf', 'test-csrf');
     fd.set('name', 'Test');
     const result = await runAction(fd);
 
@@ -51,6 +56,7 @@ describe('updateProfileAction', () => {
     mockGetSessionToken.mockResolvedValue('token');
 
     const fd = new FormData();
+    fd.set('_csrf', 'test-csrf');
     const result = await runAction(fd);
 
     expect(result.success).toBe(false);
@@ -62,6 +68,7 @@ describe('updateProfileAction', () => {
     mockUpdateProfile.mockResolvedValue({} as never);
 
     const fd = new FormData();
+    fd.set('_csrf', 'test-csrf');
     fd.set('name', 'New Name');
     const result = await runAction(fd);
 
@@ -73,6 +80,7 @@ describe('updateProfileAction', () => {
     mockGetSessionToken.mockResolvedValue('token');
 
     const fd = new FormData();
+    fd.set('_csrf', 'test-csrf');
     fd.set('password', 'newpass123');
     fd.set('confirmPassword', 'newpass123');
     const result = await runAction(fd);
@@ -85,6 +93,7 @@ describe('updateProfileAction', () => {
     mockGetSessionToken.mockResolvedValue('token');
 
     const fd = new FormData();
+    fd.set('_csrf', 'test-csrf');
     fd.set('currentPassword', 'oldpass');
     fd.set('password', 'short');
     fd.set('confirmPassword', 'short');
@@ -98,6 +107,7 @@ describe('updateProfileAction', () => {
     mockGetSessionToken.mockResolvedValue('token');
 
     const fd = new FormData();
+    fd.set('_csrf', 'test-csrf');
     fd.set('currentPassword', 'oldpass');
     fd.set('password', 'newpass123');
     fd.set('confirmPassword', 'different123');
@@ -112,6 +122,7 @@ describe('updateProfileAction', () => {
     mockUpdateProfile.mockResolvedValue({} as never);
 
     const fd = new FormData();
+    fd.set('_csrf', 'test-csrf');
     fd.set('currentPassword', 'oldpass');
     fd.set('password', 'newpass123');
     fd.set('confirmPassword', 'newpass123');
@@ -130,6 +141,7 @@ describe('updateProfileAction', () => {
     mockUpdateProfile.mockRejectedValue(new ApiError('Unauthorized', 401));
 
     const fd = new FormData();
+    fd.set('_csrf', 'test-csrf');
     fd.set('name', 'Test');
     const result = await runAction(fd);
 

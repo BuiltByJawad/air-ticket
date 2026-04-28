@@ -3,9 +3,12 @@
 import { redirect } from 'next/navigation';
 import { ApiError, cancelBooking, confirmBooking } from '../../../../lib/api/api-client';
 import { getSessionToken } from '../../../../lib/auth/session';
+import { validateCsrfToken } from '../../../../lib/auth/csrf';
 import { bookingIdSchema } from '../../../../lib/validators/schemas';
 
 export async function confirmBookingAction(formData: FormData): Promise<void> {
+  const csrfOk = await validateCsrfToken(String(formData.get('_csrf') ?? ''));
+  if (!csrfOk) { redirect('/bookings'); return; }
   const token = await getSessionToken();
   if (!token) { redirect('/login'); return; }
 
@@ -26,6 +29,8 @@ export async function confirmBookingAction(formData: FormData): Promise<void> {
 }
 
 export async function cancelBookingAction(formData: FormData): Promise<void> {
+  const csrfOk = await validateCsrfToken(String(formData.get('_csrf') ?? ''));
+  if (!csrfOk) { redirect('/bookings'); return; }
   const token = await getSessionToken();
   if (!token) { redirect('/login'); return; }
 

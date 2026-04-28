@@ -2,12 +2,14 @@
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { searchFlights, type FlightOffer } from '@/lib/api/api-client';
+import { type FlightOffer } from '@/lib/api/api-client';
 import { Loader2, ChevronDown } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Clock, Plane } from 'lucide-react';
 import { toast } from 'sonner';
+import { loadMoreFlightsAction } from '../actions';
+import { CsrfTokenInput } from '@/components/shared/csrf-token-input';
 
 function fmtTime(iso: string) {
   return new Date(iso).toLocaleTimeString('en-US', {
@@ -65,6 +67,7 @@ function OfferCard({ offer, bookAction }: { offer: FlightOffer; bookAction: (for
           </div>
 
           <form action={bookAction} className="shrink-0 w-full lg:w-auto">
+            <CsrfTokenInput />
             <input type="hidden" name="offerId" value={offer.id} />
             <Button type="submit" className="w-full lg:w-auto">Book Now</Button>
           </form>
@@ -109,21 +112,17 @@ export function LoadMoreOffers({ initialOffers, initialCursor, searchInput, book
     setLoading(true);
 
     try {
-      const token = document.cookie
-        .split('; ')
-        .find((row) => row.startsWith('session_token='))
-        ?.split('=')[1];
-
-      if (!token) return;
-
-      const res = await searchFlights(token, {
+      const res = await loadMoreFlightsAction({
         ...searchInput,
-        limit: 10,
-        after: cursor
+        after: cursor,
       });
 
-      setOffers((prev) => [...prev, ...res.offers]);
-      setCursor(res.nextCursor);
+      if (res.offers.length === 0 && !res.nextCursor) {
+        setCursor(undefined);
+      } else {
+        setOffers((prev) => [...prev, ...res.offers]);
+        setCursor(res.nextCursor);
+      }
     } catch {
       toast.error('Failed to load more flights');
     } finally {
