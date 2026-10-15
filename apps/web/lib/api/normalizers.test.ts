@@ -21,6 +21,9 @@ describe('normalizeBooking', () => {
       agencyId: 'a1',
       agencyName: 'Test Agency',
       createdByUserId: 'u1',
+      duffelOrderId: 'ord_123',
+      duffelPnr: 'PNR123',
+      duffelTicketNumbers: ['176-1234567890'],
       createdAt: '2024-01-01',
       updatedAt: '2024-01-02'
     };
@@ -28,6 +31,13 @@ describe('normalizeBooking', () => {
     expect(result.id).toBe('b1');
     expect(result.status).toBe('confirmed');
     expect(result.totalPrice.currency).toBe('USD');
+    expect(result.duffelOrderId).toBe('ord_123');
+    expect(result.duffelTicketNumbers).toEqual(['176-1234567890']);
+  });
+
+  it('accepts payment status', () => {
+    const result = normalizeBooking({ status: 'payment' });
+    expect(result.status).toBe('payment');
   });
 
   it('provides safe defaults for missing fields', () => {
@@ -102,13 +112,15 @@ describe('normalizeAdminStats', () => {
       revenueCurrency: 'USD',
       topAgencies: [{ agencyId: 'a1', agencyName: 'Acme', revenue: '1000', bookingCount: 50 }],
       recentBookingsCount: 30,
-      monthlyRevenue: [{ month: '2024-01', revenue: '500', bookingCount: 10 }]
+      monthlyRevenue: [{ month: '2024-01', revenue: '500', bookingCount: 10 }],
+      queue: { pending: 2, processing: 1, failed: 1, oldestPendingAgeMinutes: 15 }
     };
     const result = normalizeAdminStats(data);
     expect(result.totalAgencies).toBe(5);
     expect(result.bookingsByStatus.confirmed).toBe(70);
     expect(result.topAgencies[0]!.agencyName).toBe('Acme');
     expect(result.monthlyRevenue[0]!.month).toBe('2024-01');
+    expect(result.queue.failed).toBe(1);
   });
 
   it('provides safe defaults for empty input', () => {
@@ -116,6 +128,7 @@ describe('normalizeAdminStats', () => {
     expect(result.totalAgencies).toBe(0);
     expect(result.revenueCurrency).toBe('USD');
     expect(result.topAgencies).toEqual([]);
+    expect(result.queue.pending).toBe(0);
   });
 });
 

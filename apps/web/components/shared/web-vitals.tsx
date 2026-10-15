@@ -18,6 +18,17 @@ function reportMetric(metric: Metric) {
     console.log(`[Web Vitals] ${metric.name}: ${metric.value.toFixed(2)} (${metric.rating})`);
   }
 
+  // Send to our backend sink
+  fetch('/api/web-vitals', {
+    method: 'POST',
+    body: JSON.stringify(metric),
+    headers: { 'Content-Type': 'application/json' },
+    // Use keepalive to ensure the request is sent even if the page is unloaded
+    keepalive: true,
+  }).catch((err) => {
+    // Silent catch for vitals reporting failures
+  });
+
   // Send to analytics endpoint (replace with real analytics integration)
   if (navigator.sendBeacon) {
     const url = '/api/vitals';

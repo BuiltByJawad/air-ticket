@@ -77,7 +77,10 @@ export class AdminAgenciesController {
   @ApiResponse({ status: HttpStatus.OK, description: 'Agency updated', type: AgencyResponseDto })
   @Throttle({ default: { ttl: 60_000, limit: 30 } })
   async update(@Req() req: Request, @CurrentUser() user: CurrentUserData, @Param('id') id: string, @Body() body: UpdateAgencyDto) {
-    const result = await this.agenciesService.update(id, body);
+    const result = await this.agenciesService.update(id, {
+      name: body.name,
+      markupPercentage: body.markupPercentage
+    });
     await this.auditService.log({
       action: 'admin.update_agency',
       resource: 'agency',

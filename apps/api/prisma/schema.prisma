@@ -14,19 +14,22 @@ enum UserRole {
 
 enum BookingStatus {
   draft
+  payment
   confirmed
   cancelled
 }
 
 model Agency {
-  id        String   @id @default(uuid())
-  name      String
-  createdAt DateTime @default(now())
-
-  users User[]
-  bookings Booking[]
-
-  @@unique([name])
+  id               String    @id @default(uuid())
+  name             String    @unique
+  markupPercentage Decimal   @default(0.0)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  users            User[]
+  bookings         Booking[]
+  markupRules      MarkupRule[]
+  commissionRules  CommissionRule[]
+  refundRequests   RefundRequest[]
 }
 
 model User {
@@ -45,21 +48,24 @@ model User {
 }
 
 model Booking {
-  id        String        @id @default(uuid())
-  status    BookingStatus
-  offerId   String
-  offerData Json
-  currency  String
-  amount    String
-
-  agencyId String
-  agency   Agency @relation(fields: [agencyId], references: [id])
-
+  id              String        @id @default(uuid())
+  status          BookingStatus @default(draft)
+  offerId         String
+  offerData       Json
+  currency        String
+  amount          String
+  passengers      Json?
+  metadata        Json?
+  duffelOrderId   String?
+  duffelPnr       String?
+  duffelTicketNumbers String[] @default([])
+  agencyId        String
+  agency          Agency        @relation(fields: [agencyId], references: [id])
   createdByUserId String
-  createdByUser   User   @relation("BookingCreatedBy", fields: [createdByUserId], references: [id])
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdByUser   User          @relation("BookingCreatedBy", fields: [createdByUserId], references: [id])
+  refundRequests RefundRequest[]
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
 
   @@index([agencyId])
   @@index([createdByUserId])
@@ -93,4 +99,97 @@ model PasswordReset {
 
   @@index([email])
   @@index([tokenHash])
+}
+
+model MarkupRule {
+  id          String   @id @default(uuid())
+  agencyId    String
+  agency      Agency   @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  airline     String?  // IATA code, null = all airlines
+  origin      String?  // IATA code, null = all origins
+  destination String?  // IATA code, null = all destinations
+  cabinClass  String?  // economy/business/first, null = all cabins
+  markupPct   Decimal  // percentage markup (e.g. 5.0 = 5%)
+  priority    Int      @default(0) // higher = evaluated first
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([agencyId])
+  @@index([airline])
+  @@index([active])
+}
+
+model CommissionRule {
+  id              String   @id @default(uuid())
+  agencyId        String
+  agency          Agency   @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  airline         String?  // IATA code, null = all airlines
+  origin          String?  // IATA code, null = all origins
+  destination     String?  // IATA code, null = all destinations
+  cabinClass      String?  // economy/business/first, null = all cabins
+  commissionPct   Decimal  // percentage commission (e.g. 3.0 = 3%)
+  commissionFlat  Decimal? // flat amount per booking, null = percentage only
+  priority        Int      @default(0)
+  active          Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([agencyId])
+  @@index([airline])
+  @@index([active])
+}
+
+enum RefundStatus {
+  pending
+  approved
+  rejected
+  processed
+}
+
+enum AsyncJobStatus {
+  pending
+  processing
+  completed
+  failed
+}
+
+model RefundRequest {
+  id            String       @id @default(uuid())
+  bookingId     String
+  booking       Booking      @relation(fields: [bookingId], references: [id])
+  agencyId      String
+  agency        Agency       @relation(fields: [agencyId], references: [id])
+  requestedBy   String
+  reason        String
+  refundAmount  Decimal
+  currency      String
+  status        RefundStatus @default(pending)
+  reviewedBy    String?
+  reviewNote    String?
+  reviewedAt    DateTime?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  @@index([bookingId])
+  @@index([agencyId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model AsyncJob {
+  id          String         @id @default(uuid())
+  type        String
+  dedupeKey   String?        @unique
+  status      AsyncJobStatus @default(pending)
+  payload     Json
+  attempts    Int            @default(0)
+  maxAttempts Int            @default(5)
+  runAfter    DateTime       @default(now())
+  lastError   String?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  @@index([status, runAfter])
+  @@index([type])
 }

@@ -1,8 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
 import type { IFlightProvider, FlightOffer, FlightSegment } from '../flights.types';
 import { loadEnv } from '../../../config/env';
+import { DuffelApiError, isRetryableStatus } from './duffel.errors';
 
 const DUFFEL_API = 'https://api.duffel.com';
+const MAX_RETRIES = 3;
+const INITIAL_BACKOFF_MS = 500;
 
 @Injectable()
 export class DuffelProvider implements IFlightProvider {
@@ -80,14 +83,14 @@ export class DuffelProvider implements IFlightProvider {
   }
 
   private normalizeOffer(offer: DuffelOffer): FlightOffer {
-    const segments: FlightSegment[] = offer.slices.flatMap((slice) =>
-      slice.segments.map((seg) => ({
-        from: seg.departing_airport.iata_code,
-        to: seg.arriving_airport.iata_code,
-        departureTime: seg.departing_at,
-        arrivalTime: seg.arriving_at,
-        marketingCarrier: seg.marketing_carrier.iata_code,
-        flightNumber: `${seg.marketing_carrier.iata_code}${seg.operating_carrier_flight_number}`,
+    const segments: FlightSegment[] = (offer.slices ?? []).flatMap((slice) =>
+      (slice?.segments ?? []).map((seg) => ({
+        from: seg.departing_airport?.iata_code ?? '',
+        to: seg.arriving_airport?.iata_code ?? '',
+        departureTime: seg.departing_at ?? '',
+        arrivalTime: seg.arriving_at ?? '',
+        marketingCarrier: seg.marketing_carrier?.iata_code ?? '',
+        flightNumber: `${seg.marketing_carrier?.iata_code ?? ''}${seg.operating_carrier_flight_number ?? ''}`,
         duration: seg.duration,
         aircraft: seg.aircraft?.code
       }))
@@ -97,38 +100,108 @@ export class DuffelProvider implements IFlightProvider {
       id: offer.id,
       segments,
       totalPrice: {
-        currency: offer.total_currency,
-        amount: offer.total_amount
+        currency: offer.total_currency ?? '',
+        amount: offer.total_amount ?? ''
       },
       source: 'duffel',
       validUntil: offer.expires_at
     };
   }
 
-  private async request<T>(method: string, path: string, body?: unknown): Promise<T> {
+  async createOrder(input: {
+    offerId: string;
+    passengers: Array<{ type: 'adult'; title: string; givenName: string; familyName: string; email?: string; phone?: string; bornOn?: string; gender?: string }>;
+    idempotencyKey?: string;
+  }): Promise<DuffelOrderResult> {
+    this.ensureToken();
+
+    try {
+      const body = {
+        data: {
+          selected_offers: [input.offerId],
+          passengers: input.passengers.map((p, i) => ({
+            id: String(i + 1),
+            type: p.type,
+            title: p.title,
+            given_name: p.givenName,
+            family_name: p.familyName,
+            ...(p.email ? { email: p.email } : {}),
+            ...(p.phone ? { phone_number: p.phone } : {}),
+            ...(p.bornOn ? { born_on: p.bornOn } : {}),
+            ...(p.gender ? { gender: p.gender } : {})
+          }))
+        }
+      };
+
+      const res = await this.request<DuffelOrderResponse>('POST', '/air/orders', body, input.idempotencyKey);
+
+      const order = res.data;
+      return {
+        orderId: order.id,
+        pnr: order.booking_reference ?? '',
+        ticketNumbers: (order.documents ?? [])
+          .filter((d): d is DuffelTicketDocument => d.type === 'ticket')
+          .map((d) => d.passenger_name ?? ''),
+        totalCurrency: order.total_currency ?? '',
+        totalAmount: order.total_amount ?? ''
+      };
+    } catch (error) {
+      this.logger.error(`Duffel createOrder failed: ${this.extractError(error)}`);
+      throw error;
+    }
+  }
+
+  private async request<T>(method: string, path: string, body?: unknown, idempotencyKey?: string): Promise<T> {
     const url = `${DUFFEL_API}${path}`;
+    const headers: Record<string, string> = {
+      'Authorization': `Bearer ${this.token}`,
+      'Content-Type': 'application/json',
+      'Accept-Encoding': 'gzip',
+      'Duffel-Version': 'v2'
+    };
+
+    if (idempotencyKey) {
+      headers['Idempotency-Key'] = idempotencyKey;
+    }
+
     const init: RequestInit = {
       method,
-      headers: {
-        'Authorization': `Bearer ${this.token}`,
-        'Content-Type': 'application/json',
-        'Accept-Encoding': 'gzip',
-        'Duffel-Version': 'v2'
-      }
+      headers
     };
 
     if (body) {
       init.body = JSON.stringify(body);
     }
 
-    const res = await fetch(url, init);
+    let lastError: DuffelApiError | null = null;
 
-    if (!res.ok) {
+    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+      const res = await fetch(url, init);
+
+      if (res.ok) {
+        return res.json() as Promise<T>;
+      }
+
       const text = await res.text();
-      throw new Error(`Duffel API ${res.status}: ${text}`);
+      const retryable = isRetryableStatus(res.status);
+
+      lastError = new DuffelApiError(
+        `Duffel API ${res.status}: ${text}`,
+        res.status,
+        undefined,
+        retryable
+      );
+
+      if (!retryable || attempt === MAX_RETRIES) {
+        break;
+      }
+
+      const backoff = INITIAL_BACKOFF_MS * Math.pow(2, attempt);
+      this.logger.warn(`Retryable Duffel error ${res.status}, retrying in ${backoff}ms (attempt ${attempt + 1}/${MAX_RETRIES})`);
+      await new Promise((resolve) => setTimeout(resolve, backoff));
     }
 
-    return res.json() as Promise<T>;
+    throw lastError;
   }
 
   private ensureToken(): void {
@@ -221,17 +294,45 @@ interface DuffelOffer {
   id: string;
   slices: Array<{
     segments: Array<{
-      departing_airport: { iata_code: string };
-      arriving_airport: { iata_code: string };
-      departing_at: string;
-      arriving_at: string;
-      duration: string;
-      marketing_carrier: { iata_code: string };
-      operating_carrier_flight_number: string;
-      aircraft?: { code: string };
+      departing_airport?: { iata_code?: string };
+      arriving_airport?: { iata_code?: string };
+      departing_at?: string;
+      arriving_at?: string;
+      duration?: string;
+      marketing_carrier?: { iata_code?: string };
+      operating_carrier_flight_number?: string;
+      aircraft?: { code?: string };
     }>;
   }>;
-  total_currency: string;
-  total_amount: string;
+  total_currency?: string;
+  total_amount?: string;
   expires_at?: string;
+}
+
+interface DuffelOrderResponse {
+  data: {
+    id: string;
+    booking_reference?: string;
+    total_currency?: string;
+    total_amount?: string;
+    documents?: Array<DuffelTicketDocument | DuffelOtherDocument>;
+  };
+}
+
+interface DuffelTicketDocument {
+  type: 'ticket';
+  passenger_name?: string;
+}
+
+interface DuffelOtherDocument {
+  type: string;
+  passenger_name?: string;
+}
+
+export interface DuffelOrderResult {
+  orderId: string;
+  pnr: string;
+  ticketNumbers: string[];
+  totalCurrency: string;
+  totalAmount: string;
 }

@@ -81,13 +81,16 @@ export function normalizeBooking(data: unknown): Booking {
   const o = obj(data) ?? {};
   return {
     id: str(o.id),
-    status: (['draft', 'confirmed', 'cancelled'].includes(str(o.status)) ? o.status : 'draft') as Booking['status'],
+    status: (['draft', 'payment', 'confirmed', 'cancelled'].includes(str(o.status)) ? o.status : 'draft') as Booking['status'],
     offerId: str(o.offerId),
     offerData: (typeof o.offerData === 'object' && o.offerData !== null ? o.offerData : {}) as Record<string, unknown>,
     totalPrice: normalizeMoneyAmount(o.totalPrice),
     agencyId: str(o.agencyId),
     agencyName: typeof o.agencyName === 'string' ? o.agencyName : undefined,
     createdByUserId: str(o.createdByUserId),
+    duffelOrderId: typeof o.duffelOrderId === 'string' ? o.duffelOrderId : undefined,
+    duffelPnr: typeof o.duffelPnr === 'string' ? o.duffelPnr : undefined,
+    duffelTicketNumbers: arr(o.duffelTicketNumbers).filter((x): x is string => typeof x === 'string'),
     createdAt: str(o.createdAt),
     updatedAt: str(o.updatedAt)
   };
@@ -228,6 +231,7 @@ export function normalizeAirportSuggestion(data: unknown): AirportSuggestion {
 export function normalizeAdminStats(data: unknown): AdminStats {
   const o = obj(data) ?? {};
   const statusObj = obj(o.bookingsByStatus) ?? {};
+  const queueObj = obj(o.queue) ?? {};
   return {
     totalAgencies: num(o.totalAgencies),
     totalUsers: num(o.totalUsers),
@@ -257,7 +261,15 @@ export function normalizeAdminStats(data: unknown): AdminStats {
         revenue: str(mo.revenue, '0.00'),
         bookingCount: num(mo.bookingCount)
       };
-    })
+    }),
+    queue: {
+      pending: num(queueObj.pending),
+      processing: num(queueObj.processing),
+      failed: num(queueObj.failed),
+      oldestPendingAgeMinutes: typeof queueObj.oldestPendingAgeMinutes === 'number'
+        ? queueObj.oldestPendingAgeMinutes
+        : null
+    }
   };
 }
 

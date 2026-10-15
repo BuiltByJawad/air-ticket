@@ -3,6 +3,8 @@ import type { ReactNode } from 'react';
 import { Inter } from 'next/font/google';
 import { ThemeProvider } from 'next-themes';
 import { WebVitals } from '@/components/shared/web-vitals';
+import { Providers } from '@/components/shared/providers';
+import { logger } from '@/lib/logger';
 import './globals.css';
 
 const inter = Inter({ subsets: ['latin'], display: 'swap' });
@@ -34,13 +36,18 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
+  // Log server-side layout render
+  logger.info('Root layout rendered');
+
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${inter.className} min-h-screen antialiased`}>
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-          <WebVitals />
-          {children}
-        </ThemeProvider>
+        <Providers>
+          <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+            <WebVitals />
+            {children}
+          </ThemeProvider>
+        </Providers>
       </body>
     </html>
   );

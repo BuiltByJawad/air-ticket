@@ -9,9 +9,10 @@ import { ApiError, getBooking } from '@/lib/api/api-client';
 import { getSessionToken } from '@/lib/auth/session';
 import { redirect, notFound } from 'next/navigation';
 import Link from 'next/link';
-import { confirmBookingAction, cancelBookingAction } from './actions';
+import { confirmBookingAction, cancelBookingAction, generateTicketAction } from './actions';
 import { CsrfTokenInput } from '@/components/shared/csrf-token-input';
 import { BookingToast } from './components/booking-toast';
+import { TicketDownload } from './components/ticket-download';
 
 function fmtTime(iso: string) {
   return new Date(iso).toLocaleTimeString('en-US', {
@@ -309,6 +310,7 @@ export default async function BookingDetailPage({
                 <CheckCircle2 className="h-4 w-4" /> Confirm Booking
               </Button>
             </form>
+            <TicketDownload bookingId={id} onDownload={generateTicketAction} />
             <form action={cancelBookingAction}>
               <CsrfTokenInput />
               <input type="hidden" name="bookingId" value={id} />
@@ -325,7 +327,8 @@ export default async function BookingDetailPage({
           <CardHeader>
             <CardTitle>Actions</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="flex flex-col sm:flex-row gap-3">
+            <TicketDownload bookingId={id} onDownload={generateTicketAction} />
             <form action={cancelBookingAction}>
               <CsrfTokenInput />
               <input type="hidden" name="bookingId" value={id} />

@@ -101,4 +101,68 @@ export class AuditService {
       meta: { total, limit, offset }
     };
   }
+
+  async getById(id: string): Promise<AuditLog | null> {
+    const log = await this.prisma.auditLog.findUnique({ where: { id } });
+    if (!log) return null;
+    return log as AuditLog;
+  }
+
+  async exportCsv(query: {
+    action?: string;
+    resource?: string;
+    agencyId?: string;
+    userId?: string;
+    fromDate?: string;
+    toDate?: string;
+  }): Promise<string> {
+    const where: Record<string, unknown> = {};
+    if (query.action) where.action = query.action;
+    if (query.resource) where.resource = query.resource;
+    if (query.agencyId) where.agencyId = query.agencyId;
+    if (query.userId) where.userId = query.userId;
+
+    const dateFilter: Record<string, unknown> = {};
+    if (query.fromDate) dateFilter.gte = new Date(query.fromDate);
+    if (query.toDate) dateFilter.lte = new Date(query.toDate);
+    if (Object.keys(dateFilter).length > 0) where.createdAt = dateFilter;
+
+    const rows = await this.prisma.auditLog.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      take: 10_000
+    });
+
+    const header = 'id,action,resource,resourceId,agencyId,userId,requestId,createdAt';
+    const lines = rows.map((r) =>
+      [r.id, r.action, r.resource, r.resourceId ?? '', r.agencyId ?? '', r.userId ?? '', r.requestId ?? '', r.createdAt.toISOString()]
+        .map((v) => `"${String(v).replace(/"/g, '""')}"`)
+        .join(',')
+    );
+
+    return [header, ...lines].join('\n');
+  }
+
+  async getStats(query: {
+    agencyId?: string;
+    fromDate?: string;
+    toDate?: string;
+  }): Promise<Array<{ action: string; count: number }>> {
+    const where: Record<string, unknown> = {};
+    if (query.agencyId) where.agencyId = query.agencyId;
+
+    const dateFilter: Record<string, unknown> = {};
+    if (query.fromDate) dateFilter.gte = new Date(query.fromDate);
+    if (query.toDate) dateFilter.lte = new Date(query.toDate);
+    if (Object.keys(dateFilter).length > 0) where.createdAt = dateFilter;
+
+    const rows = await this.prisma.auditLog.groupBy({
+      by: ['action'],
+      where,
+      _count: { action: true },
+      orderBy: { _count: { action: 'desc' } }
+    });
+
+    return rows.map((r) => ({ action: r.action, count: r._count.action }));
+  }
 }

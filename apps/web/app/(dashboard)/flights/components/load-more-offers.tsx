@@ -31,7 +31,9 @@ function OfferSourceBadge({ source }: { source?: 'duffel' | 'stub' }) {
   return <Badge variant="secondary">Demo</Badge>;
 }
 
-function OfferCard({ offer, bookAction }: { offer: FlightOffer; bookAction: (formData: FormData) => void }) {
+import { BookingWizard } from './booking-wizard';
+
+function OfferCard({ offer, onSelect }: { offer: FlightOffer; onSelect: () => void }) {
   const first = offer.segments[0];
   const last = offer.segments[offer.segments.length - 1];
   const stops = Math.max(0, offer.segments.length - 1);
@@ -66,11 +68,9 @@ function OfferCard({ offer, bookAction }: { offer: FlightOffer; bookAction: (for
             </div>
           </div>
 
-          <form action={bookAction} className="shrink-0 w-full lg:w-auto">
-            <CsrfTokenInput />
-            <input type="hidden" name="offerId" value={offer.id} />
-            <Button type="submit" className="w-full lg:w-auto">Book Now</Button>
-          </form>
+          <div className="shrink-0 w-full lg:w-auto">
+            <Button onClick={onSelect} className="w-full lg:w-auto">Book Now</Button>
+          </div>
         </div>
 
         {offer.segments.length > 0 && (
@@ -99,13 +99,25 @@ interface LoadMoreOffersProps {
   initialOffers: FlightOffer[];
   initialCursor?: string;
   searchInput: { origin: string; destination: string; departureDate: string; adults: number };
-  bookAction: (formData: FormData) => void;
+  bookAction: (offerId: string, passengers: any[]) => Promise<void>;
 }
 
 export function LoadMoreOffers({ initialOffers, initialCursor, searchInput, bookAction }: LoadMoreOffersProps) {
   const [offers, setOffers] = useState<FlightOffer[]>(initialOffers);
   const [cursor, setCursor] = useState<string | undefined>(initialCursor);
   const [loading, setLoading] = useState(false);
+  const [selectedOffer, setSelectedOffer] = useState<FlightOffer | null>(null);
+
+  if (selectedOffer) {
+    return (
+      <BookingWizard 
+        offer={selectedOffer} 
+        adults={searchInput.adults} 
+        bookAction={bookAction}
+        onCancel={() => setSelectedOffer(null)}
+      />
+    );
+  }
 
   async function loadMore() {
     if (!cursor || loading) return;
@@ -137,7 +149,7 @@ export function LoadMoreOffers({ initialOffers, initialCursor, searchInput, book
       </h2>
       <div className="grid gap-4">
         {offers.map((offer) => (
-          <OfferCard key={offer.id} offer={offer} bookAction={bookAction} />
+          <OfferCard key={offer.id} offer={offer} onSelect={() => setSelectedOffer(offer)} />
         ))}
       </div>
 

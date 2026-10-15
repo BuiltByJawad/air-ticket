@@ -77,6 +77,7 @@ describe('AgenciesService', () => {
       const agencyRow = {
         id: 'agency-1',
         name: 'Test Agency',
+        markupPercentage: 0,
         createdAt: new Date('2024-01-01'),
         users: [
           { id: 'user-1', email: 'agent@test.com', name: 'Agent One', createdAt: new Date('2024-02-01') },
@@ -98,6 +99,7 @@ describe('AgenciesService', () => {
       expect(result).toEqual({
         id: 'agency-1',
         name: 'Test Agency',
+        markupPercentage: '0',
         createdAt: agencyRow.createdAt,
         agents: agencyRow.users,
         agentsTotal: 2,
@@ -117,6 +119,7 @@ describe('AgenciesService', () => {
       const agencyRow = {
         id: 'agency-2',
         name: 'Euro Agency',
+        markupPercentage: 5,
         createdAt: new Date('2024-01-01'),
         users: []
       };
@@ -134,6 +137,7 @@ describe('AgenciesService', () => {
       expect(result).toEqual({
         id: 'agency-2',
         name: 'Euro Agency',
+        markupPercentage: '5',
         createdAt: agencyRow.createdAt,
         agents: [],
         agentsTotal: 0,
@@ -147,6 +151,7 @@ describe('AgenciesService', () => {
       const agencyRow = {
         id: 'agency-3',
         name: 'Empty Agency',
+        markupPercentage: 0,
         createdAt: new Date('2024-01-01'),
         users: []
       };
@@ -161,6 +166,7 @@ describe('AgenciesService', () => {
       expect(result).toEqual({
         id: 'agency-3',
         name: 'Empty Agency',
+        markupPercentage: '0',
         createdAt: agencyRow.createdAt,
         agents: [],
         agentsTotal: 0,
@@ -179,10 +185,10 @@ describe('AgenciesService', () => {
     });
 
     it('should return agency when found', async () => {
-      const row = { id: 'a-1', name: 'Test', createdAt: new Date() };
+      const row = { id: 'a-1', name: 'Test', markupPercentage: 0, createdAt: new Date() };
       prisma.agency.findUnique.mockResolvedValue(row);
       const result = await service.findById('a-1');
-      expect(result).toEqual({ id: 'a-1', name: 'Test', createdAt: row.createdAt });
+      expect(result).toEqual({ id: 'a-1', name: 'Test', markupPercentage: '0', createdAt: row.createdAt });
     });
   });
 

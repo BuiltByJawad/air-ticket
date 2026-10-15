@@ -1,18 +1,24 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import type { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import type { CurrentUserData } from '../auth/current-user.decorator';
 import type { PaginatedResult } from '../app/pagination.types';
-import type { Booking, JsonValue } from './bookings.types';
+import type { Booking, JsonValue, Passenger } from './bookings.types';
+import { DuffelProvider } from '../flights/providers/duffel.provider';
+import { PricingService } from '../pricing/pricing.service';
 import PDFDocument from 'pdfkit';
 
 function toBooking(dto: {
   id: string;
-  status: 'draft' | 'confirmed' | 'cancelled';
+  status: 'draft' | 'payment' | 'confirmed' | 'cancelled';
   offerId: string;
   offerData: Prisma.JsonValue;
   currency: string;
   amount: string;
+  passengers?: Prisma.JsonValue | null;
+  duffelOrderId?: string | null;
+  duffelPnr?: string | null;
+  duffelTicketNumbers?: string[];
   agencyId: string;
   agencyName?: string;
   createdByUserId: string;
@@ -28,6 +34,10 @@ function toBooking(dto: {
       currency: dto.currency,
       amount: dto.amount
     },
+    passengers: Array.isArray(dto.passengers) ? (dto.passengers as unknown as Booking['passengers']) : undefined,
+    duffelOrderId: typeof dto.duffelOrderId === 'string' ? dto.duffelOrderId : undefined,
+    duffelPnr: typeof dto.duffelPnr === 'string' ? dto.duffelPnr : undefined,
+    duffelTicketNumbers: Array.isArray(dto.duffelTicketNumbers) ? dto.duffelTicketNumbers : undefined,
     agencyId: dto.agencyId,
     agencyName: dto.agencyName,
     createdByUserId: dto.createdByUserId,
@@ -38,7 +48,13 @@ function toBooking(dto: {
 
 @Injectable()
 export class BookingsService {
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly logger = new Logger(BookingsService.name);
+
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly duffel: DuffelProvider,
+    private readonly pricing: PricingService
+  ) {}
 
   async listPagedForUser(
     user: CurrentUserData,
@@ -122,7 +138,7 @@ export class BookingsService {
 
   async createForAgent(
     user: CurrentUserData,
-    input: { offerId: string; offerData?: unknown; currency: string; amount: string }
+    input: { offerId: string; offerData?: unknown; currency: string; amount: string; passengers: any[] }
   ): Promise<Booking> {
     if (user.role !== 'agent') {
       throw new BadRequestException('Only agents can create bookings');
@@ -134,13 +150,50 @@ export class BookingsService {
       throw new BadRequestException('offerData is required');
     }
 
+    // Apply markup rules to determine the final price
+    const offerData = input.offerData as Record<string, unknown> | null;
+    const segments = Array.isArray((offerData as any)?.segments)
+      ? ((offerData as any).segments as Array<{ from: string; to: string; marketingCarrier: string }>)
+      : [];
+    const firstSeg = segments[0];
+    const lastSeg = segments[segments.length - 1];
+
+    let finalAmount = input.amount;
+    let pricingMeta: Record<string, unknown> = {};
+
+    try {
+      const pricingResult = await this.pricing.calculatePrice({
+        agencyId: user.agencyId,
+        baseAmount: input.amount,
+        currency: input.currency,
+        airline: firstSeg?.marketingCarrier ?? '',
+        origin: firstSeg?.from ?? '',
+        destination: lastSeg?.to ?? '',
+        cabinClass: 'economy'
+      });
+      finalAmount = pricingResult.totalAmount;
+      pricingMeta = {
+        baseAmount: pricingResult.baseAmount,
+        markupPct: pricingResult.markupPct,
+        markupAmount: pricingResult.markupAmount,
+        commissionPct: pricingResult.commissionPct,
+        commissionAmount: pricingResult.commissionAmount,
+        appliedMarkupRuleId: pricingResult.appliedMarkupRuleId,
+        appliedCommissionRuleId: pricingResult.appliedCommissionRuleId
+      };
+    } catch (error) {
+      this.logger.warn(`Pricing calculation failed for booking creation, using base amount: ${error instanceof Error ? error.message : String(error)}`);
+    }
+
     const created = await this.prisma.booking.create({
       data: {
         status: 'draft',
         offerId: input.offerId,
         offerData: input.offerData as Prisma.InputJsonValue,
         currency: input.currency,
-        amount: input.amount,
+        amount: finalAmount,
+        passengers: input.passengers as Prisma.InputJsonValue,
+        metadata: pricingMeta as Prisma.InputJsonValue,
         agencyId: user.agencyId,
         createdByUserId: user.sub
       }
@@ -202,7 +255,49 @@ export class BookingsService {
     if (booking.status !== 'draft') {
       throw new BadRequestException('Only draft bookings can be confirmed');
     }
-    const updated = await this.prisma.booking.update({ where: { id }, data: { status: 'confirmed' } });
+
+    // Create Duffel order to get real booking references
+    let duffelOrderId: string | null = null;
+    let duffelPnr: string | null = null;
+    let duffelTicketNumbers: string[] = [];
+
+    try {
+      const passengers = Array.isArray(booking.passengers)
+        ? (booking.passengers as unknown as Passenger[]).map((p: Passenger, i: number) => ({
+            type: 'adult' as const,
+            title: p.gender === 'F' ? 'ms' : 'mr',
+            givenName: p.firstName,
+            familyName: p.lastName,
+            email: p.email,
+            phone: p.phone,
+            bornOn: p.dateOfBirth,
+            gender: p.gender === 'M' ? 'male' : p.gender === 'F' ? 'female' : undefined
+          }))
+        : [];
+
+      const orderResult = await this.duffel.createOrder({
+        offerId: booking.offerId,
+        passengers,
+        idempotencyKey: `booking-${id}`
+      });
+
+      duffelOrderId = orderResult.orderId;
+      duffelPnr = orderResult.pnr;
+      duffelTicketNumbers = orderResult.ticketNumbers;
+    } catch (error) {
+      this.logger.error(`Duffel order creation failed for booking ${id}: ${error instanceof Error ? error.message : String(error)}`);
+      // Continue confirmation even if Duffel fails — references can be backfilled
+    }
+
+    const updated = await this.prisma.booking.update({
+      where: { id },
+      data: {
+        status: 'confirmed',
+        ...(duffelOrderId ? { duffelOrderId } : {}),
+        ...(duffelPnr ? { duffelPnr } : {}),
+        ...(duffelTicketNumbers.length > 0 ? { duffelTicketNumbers } : {})
+      }
+    });
     return toBooking(updated);
   }
 
@@ -215,7 +310,50 @@ export class BookingsService {
     if (booking.status === 'cancelled') {
       throw new BadRequestException('Booking is already cancelled');
     }
-    const updated = await this.prisma.booking.update({ where: { id }, data: { status: 'cancelled' } });
+
+    let penaltyAmount = 0;
+    if (booking.status === 'confirmed') {
+      // Logic for cancellation penalty (e.g., 10% of the amount)
+      penaltyAmount = parseFloat(booking.amount) * 0.1;
+    }
+
+    const updated = await this.prisma.booking.update({
+      where: { id },
+      data: {
+        status: 'cancelled',
+        metadata: {
+          ...(booking.metadata as any || {}),
+          cancellationPenalty: penaltyAmount.toFixed(2),
+          cancelledAt: new Date().toISOString(),
+          cancelledBy: user.sub
+        }
+      }
+    });
+    return toBooking(updated);
+  }
+
+  async refundForAdmin(user: CurrentUserData, id: string): Promise<Booking> {
+    const booking = await this.prisma.booking.findUnique({ where: { id } });
+    if (!booking) throw new NotFoundException('Booking not found');
+    if (booking.status !== 'confirmed') {
+      throw new BadRequestException('Only confirmed bookings can be refunded');
+    }
+
+    // Logic for refund processing (e.g., full refund minus 5% service fee)
+    const refundAmount = parseFloat(booking.amount) * 0.95;
+
+    const updated = await this.prisma.booking.update({
+      where: { id },
+      data: {
+        status: 'cancelled',
+        metadata: {
+          ...(booking.metadata as any || {}),
+          refundAmount: refundAmount.toFixed(2),
+          refundedAt: new Date().toISOString(),
+          refundedBy: user.sub
+        }
+      }
+    });
     return toBooking(updated);
   }
 
@@ -411,6 +549,182 @@ export class BookingsService {
     // Footer
     doc.moveDown(1);
     doc.fontSize(8).fillColor('gray').text(`Total bookings: ${rows.length}`, { align: 'center' });
+
+    doc.end();
+
+    return new Promise<Buffer>((resolve) => {
+      doc.on('end', () => resolve(Buffer.concat(chunks as unknown as Uint8Array[])));
+    });
+  }
+
+  async generateTicket(user: CurrentUserData, id: string): Promise<Buffer> {
+    const booking = await this.prisma.booking.findUnique({ where: { id } });
+    if (!booking) throw new NotFoundException('Booking not found');
+    if (user.role === 'agent' && (!user.agencyId || booking.agencyId !== user.agencyId)) {
+      throw new NotFoundException('Booking not found');
+    }
+    if (booking.status !== 'confirmed') {
+      throw new BadRequestException('Only confirmed bookings have tickets');
+    }
+
+    const offerData = booking.offerData as Record<string, unknown> | null;
+    const segments = Array.isArray((offerData as any)?.segments)
+      ? ((offerData as any).segments as Array<{ from: string; to: string; departureTime: string; arrivalTime: string; marketingCarrier: string; flightNumber: string; duration?: string; aircraft?: string }>)
+      : [];
+    const passengers = Array.isArray(booking.passengers)
+      ? (booking.passengers as unknown as Passenger[])
+      : [];
+
+    const doc = new PDFDocument({ margin: 50, size: 'A4' });
+    const chunks: Buffer[] = [];
+    doc.on('data', (chunk: Buffer) => chunks.push(chunk));
+
+    // Header
+    doc.fontSize(22).font('Helvetica-Bold').text('E-TICKET / ITINERARY', { align: 'center' });
+    doc.moveDown(0.3);
+    doc.fontSize(9).font('Helvetica').fillColor('gray').text(`Issued: ${new Date().toISOString()}`, { align: 'center' });
+    doc.moveDown(0.5);
+    doc.moveTo(50, doc.y).lineTo(545, doc.y).stroke();
+    doc.moveDown(0.8);
+
+    // Booking references
+    doc.fillColor('black').fontSize(12).font('Helvetica-Bold').text('Booking References');
+    doc.moveDown(0.3);
+    doc.fontSize(10).font('Helvetica');
+    doc.text(`Booking ID: ${booking.id}`);
+    if (booking.duffelOrderId) {
+      doc.text(`Order ID: ${booking.duffelOrderId}`);
+    }
+    if (booking.duffelPnr) {
+      doc.text(`PNR: ${booking.duffelPnr}`);
+    }
+    if (booking.duffelTicketNumbers.length > 0) {
+      doc.text(`Ticket Number(s): ${booking.duffelTicketNumbers.join(', ')}`);
+    }
+    doc.text(`Offer ID: ${booking.offerId}`);
+    doc.moveDown(0.5);
+    doc.moveTo(50, doc.y).lineTo(545, doc.y).stroke();
+    doc.moveDown(0.8);
+
+    // Flight segments
+    if (segments.length > 0) {
+      doc.fontSize(12).font('Helvetica-Bold').text('Flight Itinerary');
+      doc.moveDown(0.3);
+
+      for (const seg of segments) {
+        doc.fontSize(10).font('Helvetica-Bold').text(`${seg.marketingCarrier} ${seg.flightNumber}`);
+        doc.font('Helvetica').fontSize(9);
+        doc.text(`  ${seg.from} → ${seg.to}`);
+        doc.text(`  Departure: ${seg.departureTime}`);
+        doc.text(`  Arrival: ${seg.arrivalTime}`);
+        if (seg.duration) doc.text(`  Duration: ${seg.duration}`);
+        if (seg.aircraft) doc.text(`  Aircraft: ${seg.aircraft}`);
+        doc.moveDown(0.4);
+      }
+      doc.moveTo(50, doc.y).lineTo(545, doc.y).stroke();
+      doc.moveDown(0.8);
+    }
+
+    // Passengers
+    if (passengers.length > 0) {
+      doc.fillColor('black').fontSize(12).font('Helvetica-Bold').text('Passengers');
+      doc.moveDown(0.3);
+      for (const p of passengers) {
+        doc.fontSize(10).font('Helvetica').text(`${p.firstName} ${p.lastName}`);
+      }
+      doc.moveDown(0.5);
+      doc.moveTo(50, doc.y).lineTo(545, doc.y).stroke();
+      doc.moveDown(0.8);
+    }
+
+    // Price
+    doc.fillColor('black').fontSize(12).font('Helvetica-Bold').text('Total Price');
+    doc.moveDown(0.3);
+    doc.fontSize(10).font('Helvetica').text(`${booking.currency} ${booking.amount}`);
+
+    doc.end();
+
+    return new Promise<Buffer>((resolve) => {
+      doc.on('end', () => resolve(Buffer.concat(chunks as unknown as Uint8Array[])));
+    });
+  }
+
+  async generateInvoice(user: CurrentUserData, id: string): Promise<Buffer> {
+    const booking = await this.prisma.booking.findUnique({
+      where: { id },
+      include: { agency: { select: { name: true } } }
+    });
+    if (!booking) throw new NotFoundException('Booking not found');
+    if (user.role === 'agent' && (!user.agencyId || booking.agencyId !== user.agencyId)) {
+      throw new NotFoundException('Booking not found');
+    }
+
+    const passengers = Array.isArray(booking.passengers)
+      ? (booking.passengers as unknown as Passenger[])
+      : [];
+    const meta = booking.metadata as Record<string, unknown> | null;
+
+    const doc = new PDFDocument({ margin: 50, size: 'A4' });
+    const chunks: Buffer[] = [];
+    doc.on('data', (chunk: Buffer) => chunks.push(chunk));
+
+    // Header
+    doc.fontSize(22).font('Helvetica-Bold').text('INVOICE', { align: 'center' });
+    doc.moveDown(0.3);
+    doc.fontSize(9).font('Helvetica').fillColor('gray').text(`Invoice Date: ${new Date().toISOString()}`, { align: 'center' });
+    doc.moveDown(0.5);
+    doc.moveTo(50, doc.y).lineTo(545, doc.y).stroke();
+    doc.moveDown(0.8);
+
+    // Invoice details
+    doc.fillColor('black').fontSize(10).font('Helvetica');
+    doc.text(`Invoice No: INV-${booking.id.slice(0, 8)}`);
+    doc.text(`Booking ID: ${booking.id}`);
+    doc.text(`Agency: ${booking.agency?.name ?? 'N/A'}`);
+    if (booking.duffelPnr) {
+      doc.text(`PNR: ${booking.duffelPnr}`);
+    }
+    doc.moveDown(0.5);
+    doc.moveTo(50, doc.y).lineTo(545, doc.y).stroke();
+    doc.moveDown(0.8);
+
+    // Passengers
+    if (passengers.length > 0) {
+      doc.fontSize(12).font('Helvetica-Bold').text('Passengers');
+      doc.moveDown(0.3);
+      for (const p of passengers) {
+        doc.fontSize(10).font('Helvetica').text(`${p.firstName} ${p.lastName}`);
+      }
+      doc.moveDown(0.5);
+      doc.moveTo(50, doc.y).lineTo(545, doc.y).stroke();
+      doc.moveDown(0.8);
+    }
+
+    // Pricing breakdown
+    doc.fillColor('black').fontSize(12).font('Helvetica-Bold').text('Pricing Breakdown');
+    doc.moveDown(0.3);
+    doc.fontSize(10).font('Helvetica');
+
+    const baseAmount = typeof meta?.baseAmount === 'string' ? meta.baseAmount : booking.amount;
+    const markupPct = typeof meta?.markupPct === 'number' ? meta.markupPct : 0;
+    const markupAmount = typeof meta?.markupAmount === 'string' ? meta.markupAmount : '0.00';
+    const commissionPct = typeof meta?.commissionPct === 'number' ? meta.commissionPct : 0;
+    const commissionAmount = typeof meta?.commissionAmount === 'string' ? meta.commissionAmount : '0.00';
+
+    doc.text(`Base Fare: ${booking.currency} ${baseAmount}`);
+    if (markupPct > 0) {
+      doc.text(`Markup (${markupPct}%): ${booking.currency} ${markupAmount}`);
+    }
+    doc.text(`Total Charged: ${booking.currency} ${booking.amount}`);
+    doc.moveDown(0.3);
+    doc.fontSize(9).fillColor('gray').text(`Commission (${commissionPct}%): ${booking.currency} ${commissionAmount} (internal)`);
+    doc.fillColor('black');
+    doc.moveDown(0.5);
+    doc.moveTo(50, doc.y).lineTo(545, doc.y).stroke();
+    doc.moveDown(0.8);
+
+    // Footer
+    doc.fontSize(8).fillColor('gray').text('This is a computer-generated invoice.', { align: 'center' });
 
     doc.end();
 

@@ -2,7 +2,6 @@
 import { Search } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ApiError, RateLimitError, createBooking, quoteFlight, searchFlights } from '@/lib/api/api-client';
-import { validateCsrfToken } from '@/lib/auth/csrf';
 
 export const metadata: Metadata = { title: 'Flights', description: 'Search and book flights for your agency.' };
 import { clearSessionToken, getSessionToken } from '@/lib/auth/session';
@@ -65,13 +64,9 @@ export default async function FlightsPage({
     }
   }
 
-  async function bookOffer(formData: FormData) {
+  async function bookOffer(offerId: string, passengers: any[]) {
     'use server';
 
-    const csrfOk = await validateCsrfToken(String(formData.get('_csrf') ?? ''));
-    if (!csrfOk) { redirect('/flights'); }
-
-    const offerId = String(formData.get('offerId') ?? '').trim();
     if (!offerId) {
       redirect('/flights');
     }
@@ -87,7 +82,8 @@ export default async function FlightsPage({
         offerId: quote.offer.id,
         offerData: quote.offer,
         currency: quote.offer.totalPrice.currency,
-        amount: quote.offer.totalPrice.amount
+        amount: quote.offer.totalPrice.amount,
+        passengers
       });
     } catch (err: unknown) {
       if (err instanceof RateLimitError) {

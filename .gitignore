@@ -1,35 +1,84 @@
 # Dependencies
 node_modules/
+.pnp/
+.pnp.js
+.pnpm-store/
 
 # Build output
 dist/
 .next/
 out/
+build/
+.turbo/
 
-# Environment files
+# Environment files — never commit secrets
 .env
 .env.local
 .env.*.local
+.env.development
+.env.production
+!.env.example
+apps/*/.env
+apps/*/.env.local
+apps/*/.env.*.local
+!apps/*/.env.example
+packages/*/.env
 
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
+# Corepack / pnpm cache (local only)
+.corepack/
 
-# OS
-.DS_Store
-Thumbs.db
-
-# Debug
-npm-debug.log*
-pnpm-debug.log*
-
-# Testing
+# Testing & reports
 coverage/
+playwright-report/
+test-results/
+junit.xml
 
 # Prisma
 apps/api/prisma/migrations/**/migration_lock.toml
 
 # TypeScript
 *.tsbuildinfo
+tsconfig.tsbuildinfo
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*.code-workspace
+
+# OS
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# AI / Agent tooling — local only, not part of project
+.agents/
+.kilo/
+.kilocode/
+.opencode/
+.claude/
+.cursor/
+.codex/
+.aider*
+.muse/
+agents.md
+CLAUDE.md
+
+# Temp / junk
+apps/api/query
+tmp/
+temp/
+.tmp/
+
+# Vercel / deploy
+.vercel/

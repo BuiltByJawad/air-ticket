@@ -6,6 +6,7 @@ import { StubProvider } from './providers/stub.provider';
 
 @Module({
   providers: [FlightsService, DuffelProvider, StubProvider],
-  controllers: [FlightsController]
+  controllers: [FlightsController],
+  exports: [DuffelProvider]
 })
 export class FlightsModule {}

@@ -134,6 +134,90 @@ export class BookingsController {
     return this.bookingsService.getByIdForUser(user, id);
   }
 
+  @Get(':id/ticket')
+  @Roles('agent', 'admin')
+  @Throttle({ default: { ttl: 60_000, limit: 30 } })
+  @ApiOperation({ summary: 'Download e-ticket PDF for a confirmed booking' })
+  @ApiParam({ name: 'id', description: 'Booking ID' })
+  async ticket(@CurrentUser() user: CurrentUserData, @Param('id') id: string, @Req() req: Request) {
+    const pdfBuffer = await this.bookingsService.generateTicket(user, id);
+
+    await this.auditService.log({
+      action: 'booking.ticket_download',
+      resource: 'booking',
+      resourceId: id,
+      agencyId: user.agencyId,
+      userId: user.sub,
+      requestId: req.requestId
+    });
+
+    req.res?.setHeader('Content-Type', 'application/pdf');
+    req.res?.setHeader('Content-Disposition', `attachment; filename=ticket-${id}.pdf`);
+    req.res?.send(pdfBuffer);
+  }
+
+  @Get(':id/invoice')
+  @Roles('agent', 'admin')
+  @Throttle({ default: { ttl: 60_000, limit: 30 } })
+  @ApiOperation({ summary: 'Download invoice PDF for a booking' })
+  @ApiParam({ name: 'id', description: 'Booking ID' })
+  async invoice(@CurrentUser() user: CurrentUserData, @Param('id') id: string, @Req() req: Request) {
+    const pdfBuffer = await this.bookingsService.generateInvoice(user, id);
+
+    await this.auditService.log({
+      action: 'booking.invoice_download',
+      resource: 'booking',
+      resourceId: id,
+      agencyId: user.agencyId,
+      userId: user.sub,
+      requestId: req.requestId
+    });
+
+    req.res?.setHeader('Content-Type', 'application/pdf');
+    req.res?.setHeader('Content-Disposition', `attachment; filename=invoice-${id}.pdf`);
+    req.res?.send(pdfBuffer);
+  }
+
+  @Post(':id/resend-ticket')
+  @Roles('agent', 'admin')
+  @Throttle({ default: { ttl: 60_000, limit: 10 } })
+  @ApiOperation({ summary: 'Resend e-ticket PDF for a confirmed booking' })
+  @ApiParam({ name: 'id', description: 'Booking ID' })
+  async resendTicket(@CurrentUser() user: CurrentUserData, @Param('id') id: string, @Req() req: Request) {
+    await this.bookingsService.generateTicket(user, id);
+
+    await this.auditService.log({
+      action: 'booking.ticket_resent',
+      resource: 'booking',
+      resourceId: id,
+      agencyId: user.agencyId,
+      userId: user.sub,
+      requestId: req.requestId
+    });
+
+    return { sent: true };
+  }
+
+  @Post(':id/resend-invoice')
+  @Roles('agent', 'admin')
+  @Throttle({ default: { ttl: 60_000, limit: 10 } })
+  @ApiOperation({ summary: 'Resend invoice PDF for a booking' })
+  @ApiParam({ name: 'id', description: 'Booking ID' })
+  async resendInvoice(@CurrentUser() user: CurrentUserData, @Param('id') id: string, @Req() req: Request) {
+    await this.bookingsService.generateInvoice(user, id);
+
+    await this.auditService.log({
+      action: 'booking.invoice_resent',
+      resource: 'booking',
+      resourceId: id,
+      agencyId: user.agencyId,
+      userId: user.sub,
+      requestId: req.requestId
+    });
+
+    return { sent: true };
+  }
+
   @Patch(':id/confirm')
   @Roles('agent', 'admin')
   @Throttle({ default: { ttl: 60_000, limit: 30 } })
@@ -144,6 +228,26 @@ export class BookingsController {
     const booking = await this.bookingsService.confirmForAgent(user, id);
     await this.auditService.log({
       action: 'booking.confirm',
+      resource: 'booking',
+      resourceId: booking.id,
+      agencyId: user.agencyId,
+      userId: user.sub,
+      requestId: req.requestId,
+      metadata: { offerId: booking.offerId }
+    });
+    return booking;
+  }
+
+  @Patch(':id/refund')
+  @Roles('admin')
+  @Throttle({ default: { ttl: 60_000, limit: 30 } })
+  @ApiOperation({ summary: 'Refund a confirmed booking' })
+  @ApiResponse({ status: HttpStatus.OK, description: 'Booking refunded', type: BookingResponseDto })
+  @ApiParam({ name: 'id', description: 'Booking ID' })
+  async refund(@Req() req: Request, @CurrentUser() user: CurrentUserData, @Param('id') id: string) {
+    const booking = await this.bookingsService.refundForAdmin(user, id);
+    await this.auditService.log({
+      action: 'booking.refund',
       resource: 'booking',
       resourceId: booking.id,
       agencyId: user.agencyId,

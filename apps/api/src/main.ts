@@ -9,7 +9,7 @@ import { loadEnv } from './config/env';
 
 async function bootstrap() {
   const env = loadEnv();
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, { bodyParser: true, rawBody: true });
 
   app.enableCors({
     origin: env.CORS_ORIGIN,

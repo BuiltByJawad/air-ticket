@@ -5,6 +5,7 @@ import type { PaginatedResult } from '../app/pagination.types';
 export interface Agency {
   id: string;
   name: string;
+  markupPercentage: string;
   createdAt: Date;
 }
 
@@ -12,16 +13,18 @@ export interface Agency {
 export class AgenciesService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(input: { name: string }): Promise<Agency> {
+  async create(input: { name: string; markupPercentage?: number }): Promise<Agency> {
     const created = await this.prisma.agency.create({
       data: {
-        name: input.name
+        name: input.name,
+        markupPercentage: input.markupPercentage ?? 0
       }
     });
 
     return {
       id: created.id,
       name: created.name,
+      markupPercentage: created.markupPercentage.toString(),
       createdAt: created.createdAt
     };
   }
@@ -38,6 +41,7 @@ export class AgenciesService {
     return {
       id: agency.id,
       name: agency.name,
+      markupPercentage: agency.markupPercentage.toString(),
       createdAt: agency.createdAt
     };
   }
@@ -45,6 +49,7 @@ export class AgenciesService {
   async getDetail(id: string, agentLimit = 20, agentOffset = 0): Promise<{
     id: string;
     name: string;
+    markupPercentage: string;
     createdAt: Date;
     agents: { id: string; email: string; name: string | null; createdAt: Date }[];
     agentsTotal: number;
@@ -94,6 +99,7 @@ export class AgenciesService {
     return {
       id: agency.id,
       name: agency.name,
+      markupPercentage: agency.markupPercentage.toString(),
       createdAt: agency.createdAt,
       agents: agency.users,
       agentsTotal,
@@ -107,7 +113,12 @@ export class AgenciesService {
     const rows = await this.prisma.agency.findMany({
       orderBy: { createdAt: 'desc' }
     });
-    return rows.map((a) => ({ id: a.id, name: a.name, createdAt: a.createdAt }));
+    return rows.map((a) => ({ 
+      id: a.id, 
+      name: a.name, 
+      markupPercentage: a.markupPercentage.toString(),
+      createdAt: a.createdAt 
+    }));
   }
 
   async listAllPaged(input: { limit: number; offset: number; search?: string }): Promise<PaginatedResult<Agency>> {
@@ -126,12 +137,17 @@ export class AgenciesService {
     ]);
 
     return {
-      items: rows.map((a) => ({ id: a.id, name: a.name, createdAt: a.createdAt })),
+      items: rows.map((a) => ({ 
+        id: a.id, 
+        name: a.name, 
+        markupPercentage: a.markupPercentage.toString(),
+        createdAt: a.createdAt 
+      })),
       meta: { total, limit: input.limit, offset: input.offset }
     };
   }
 
-  async update(id: string, input: { name?: string }): Promise<Agency> {
+  async update(id: string, input: { name?: string; markupPercentage?: number }): Promise<Agency> {
     const existing = await this.prisma.agency.findUnique({ where: { id } });
     if (!existing) {
       throw new NotFoundException('Agency not found');
@@ -142,7 +158,12 @@ export class AgenciesService {
       data: { ...input }
     });
 
-    return { id: updated.id, name: updated.name, createdAt: updated.createdAt };
+    return { 
+      id: updated.id, 
+      name: updated.name, 
+      markupPercentage: updated.markupPercentage.toString(),
+      createdAt: updated.createdAt 
+    };
   }
 
   async delete(id: string): Promise<Agency> {
@@ -152,6 +173,11 @@ export class AgenciesService {
     }
 
     const deleted = await this.prisma.agency.delete({ where: { id } });
-    return { id: deleted.id, name: deleted.name, createdAt: deleted.createdAt };
+    return { 
+      id: deleted.id, 
+      name: deleted.name, 
+      markupPercentage: deleted.markupPercentage.toString(),
+      createdAt: deleted.createdAt 
+    };
   }
 }

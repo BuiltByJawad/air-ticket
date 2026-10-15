@@ -1,12 +1,13 @@
 import type { Metadata } from 'next';
 import { getAgencyDetail } from '@/lib/api/api-client';
 import { getSessionToken } from '@/lib/auth/session';
-import { Building2, Users, BookOpen, DollarSign, ArrowLeft, Mail } from 'lucide-react';
+import { Building2, Users, BookOpen, Percent, ArrowLeft, Mail, DollarSign } from 'lucide-react';
 
 export const metadata: Metadata = { title: 'Agency Details', description: 'View agency details, agents, and performance.' };
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { PaginationControls } from '@/components/shared/pagination-controls';
+import { MarkupEditForm } from '../components/markup-edit-form';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
@@ -63,6 +64,19 @@ export default async function AgencyDetailPage({
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{agency.bookingsCount}</div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-xs font-medium text-muted-foreground sm:text-sm">Markup</CardTitle>
+            <Percent className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between">
+              <div className="text-2xl font-bold">{agency.markupPercentage ?? 0}%</div>
+              <MarkupEditForm agencyId={agency.id} currentMarkup={agency.markupPercentage ?? 0} />
+            </div>
           </CardContent>
         </Card>
 

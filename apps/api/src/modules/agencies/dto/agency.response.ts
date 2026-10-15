@@ -9,4 +9,7 @@ export class AgencyResponseDto {
 
   @ApiProperty({ example: '2025-01-01T00:00:00.000Z' })
   createdAt: Date;
+
+  @ApiPropertyOptional({ example: 10 })
+  markupPercentage?: number;
 }

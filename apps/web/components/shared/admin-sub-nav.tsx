@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Building2, Users, BookOpen, ShieldCheck, ChevronLeft } from 'lucide-react';
+import { Building2, Users, BookOpen, ShieldCheck, ChevronLeft, Workflow, FileSpreadsheet } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const adminNavItems = [
@@ -10,7 +10,9 @@ const adminNavItems = [
   { href: '/admin/agencies', label: 'Agencies', icon: Building2 },
   { href: '/admin/users', label: 'Users', icon: Users },
   { href: '/admin/bookings', label: 'Bookings', icon: BookOpen },
-  { href: '/admin/audit', label: 'Audit Logs', icon: ShieldCheck }
+  { href: '/admin/audit', label: 'Audit Logs', icon: ShieldCheck },
+  { href: '/admin/jobs', label: 'Jobs', icon: Workflow },
+  { href: '/admin/reconciliation', label: 'Reconciliation', icon: FileSpreadsheet }
 ];
 
 export function AdminSubNav() {

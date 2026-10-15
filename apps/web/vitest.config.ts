@@ -6,15 +6,11 @@ export default defineConfig({
   plugins: [react()],
   test: {
     include: ['**/*.test.{ts,tsx}'],
-    environment: 'node',
+    environment: 'jsdom',
     setupFiles: ['./vitest.setup.ts'],
     testTimeout: 30000,
-    pool: 'threads',
-    poolOptions: {
-      threads: {
-        singleThread: true,
-      },
-    },
+    pool: 'forks',
+    fileParallelism: false,
   },
   resolve: {
     alias: {

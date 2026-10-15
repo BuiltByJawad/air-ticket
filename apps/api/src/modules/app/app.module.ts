@@ -9,7 +9,12 @@ import { PrismaModule } from '../prisma/prisma.module';
 import { AgenciesModule } from '../agencies/agencies.module';
 import { FlightsModule } from '../flights/flights.module';
 import { BookingsModule } from '../bookings/bookings.module';
+import { PaymentsModule } from '../payments/payments.module';
+import { PricingModule } from '../pricing/pricing.module';
+import { RefundsModule } from '../refunds/refunds.module';
 import { AuditModule } from '../audit/audit.module';
+import { AdminJobsModule } from '../admin-jobs/admin-jobs.module';
+import { AdminReconciliationModule } from '../admin-reconciliation/admin-reconciliation.module';
 import { RequestIdMiddleware } from './request-id.middleware';
 import { LoggerMiddleware } from './logger.middleware';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -23,7 +28,12 @@ import { RolesGuard } from '../auth/roles.guard';
     AgenciesModule,
     FlightsModule,
     BookingsModule,
-    AuditModule
+    PaymentsModule,
+    PricingModule,
+    RefundsModule,
+    AuditModule,
+    AdminJobsModule,
+    AdminReconciliationModule
   ],
   controllers: [HealthController, AdminStatsController, AgentStatsController],
   providers: [

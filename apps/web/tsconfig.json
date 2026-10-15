@@ -23,6 +23,7 @@
     ".next/types/**/*.ts"
   ],
   "exclude": [
+    ".next/dev",
     "node_modules",
     "vitest.config.ts",
     "vitest.setup.ts"

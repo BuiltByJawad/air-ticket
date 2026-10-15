@@ -34,6 +34,12 @@ interface AdminStats {
   topAgencies: AgencyRevenue[];
   recentBookingsCount: number;
   monthlyRevenue: MonthlyRevenue[];
+  queue: {
+    pending: number;
+    processing: number;
+    failed: number;
+    oldestPendingAgeMinutes: number | null;
+  };
 }
 
 @ApiTags('Admin - Stats')
@@ -53,7 +59,7 @@ export class AdminStatsController {
     sixMonthsAgo.setDate(1);
     sixMonthsAgo.setHours(0, 0, 0, 0);
 
-    const [totalAgencies, totalUsers, totalAgents, bookingsByStatus, confirmedBookings, thirtyDaysAgo] = await Promise.all([
+    const [totalAgencies, totalUsers, totalAgents, bookingsByStatus, confirmedBookings, thirtyDaysAgo, queueGrouped, oldestPending] = await Promise.all([
       this.prisma.agency.count(),
       this.prisma.user.count(),
       this.prisma.user.count({ where: { role: 'agent' } }),
@@ -67,6 +73,15 @@ export class AdminStatsController {
       }),
       this.prisma.booking.count({
         where: { createdAt: { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) } }
+      }),
+      this.prisma.asyncJob.groupBy({
+        by: ['status'],
+        _count: { status: true }
+      }),
+      this.prisma.asyncJob.findFirst({
+        where: { status: 'pending' },
+        orderBy: { createdAt: 'asc' },
+        select: { createdAt: true }
       })
     ]);
 
@@ -78,6 +93,17 @@ export class AdminStatsController {
     }
 
     const totalBookings = statusMap.draft + statusMap.confirmed + statusMap.cancelled;
+    let queuePending = 0;
+    let queueProcessing = 0;
+    let queueFailed = 0;
+    for (const row of queueGrouped) {
+      if (row.status === 'pending') queuePending = row._count.status;
+      if (row.status === 'processing') queueProcessing = row._count.status;
+      if (row.status === 'failed') queueFailed = row._count.status;
+    }
+    const oldestPendingAgeMinutes = oldestPending
+      ? Math.max(0, Math.floor((Date.now() - oldestPending.createdAt.getTime()) / 60000))
+      : null;
 
     // Calculate total revenue from confirmed bookings (group by currency)
     const revenueByCurrency = new Map<string, number>();
@@ -161,7 +187,13 @@ export class AdminStatsController {
       revenueCurrency: primaryCurrency,
       topAgencies,
       recentBookingsCount: thirtyDaysAgo,
-      monthlyRevenue
+      monthlyRevenue,
+      queue: {
+        pending: queuePending,
+        processing: queueProcessing,
+        failed: queueFailed,
+        oldestPendingAgeMinutes
+      }
     };
   }
 }

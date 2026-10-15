@@ -12,8 +12,8 @@ export class BookingResponseDto {
   @ApiProperty({ example: 'booking-1' })
   id: string;
 
-  @ApiProperty({ example: 'draft', enum: ['draft', 'confirmed', 'cancelled'] })
-  status: 'draft' | 'confirmed' | 'cancelled';
+  @ApiProperty({ example: 'draft', enum: ['draft', 'payment', 'confirmed', 'cancelled'] })
+  status: 'draft' | 'payment' | 'confirmed' | 'cancelled';
 
   @ApiProperty({ example: 'off_0001' })
   offerId: string;
@@ -29,6 +29,15 @@ export class BookingResponseDto {
 
   @ApiProperty({ example: 'user-1' })
   createdByUserId: string;
+
+  @ApiPropertyOptional({ example: 'ord_0000A1B2C3' })
+  duffelOrderId?: string;
+
+  @ApiPropertyOptional({ example: 'PNR123' })
+  duffelPnr?: string;
+
+  @ApiPropertyOptional({ example: ['176-1234567890'] })
+  duffelTicketNumbers?: string[];
 
   @ApiProperty({ example: '2025-01-01T00:00:00.000Z' })
   createdAt: Date;

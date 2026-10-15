@@ -16,7 +16,7 @@ import {
 import { confirmBookingAction, cancelBookingAction } from '../actions';
 import { fetchCsrfToken } from '@/components/shared/csrf-token-input';
 
-export function BookingActions({ id, status }: { id: string; status: 'draft' | 'confirmed' | 'cancelled' }) {
+export function BookingActions({ id, status }: { id: string; status: 'draft' | 'payment' | 'confirmed' | 'cancelled' }) {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [cancelOpen, setCancelOpen] = useState(false);
   const [loading, setLoading] = useState(false);

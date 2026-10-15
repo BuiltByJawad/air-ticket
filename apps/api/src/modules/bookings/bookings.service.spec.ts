@@ -2,6 +2,8 @@ import { Test, type TestingModule } from '@nestjs/testing';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { BookingsService } from './bookings.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { DuffelProvider } from '../flights/providers/duffel.provider';
+import { PricingService } from '../pricing/pricing.service';
 import type { CurrentUserData } from '../auth/current-user.decorator';
 
 describe('BookingsService', () => {
@@ -15,6 +17,8 @@ describe('BookingsService', () => {
       count: jest.Mock;
     };
   };
+  let duffel: { createOrder: jest.Mock };
+  let pricing: { calculatePrice: jest.Mock };
 
   const agentUser: CurrentUserData = {
     sub: 'user-1',
@@ -58,10 +62,37 @@ describe('BookingsService', () => {
 
     mockPrismaCount.mockReset();
 
+    duffel = {
+      createOrder: jest.fn().mockResolvedValue({
+        orderId: 'ord_123',
+        pnr: 'PNRABC',
+        ticketNumbers: ['176-1234567890'],
+        totalCurrency: 'USD',
+        totalAmount: '500.00'
+      })
+    };
+
+    pricing = {
+      calculatePrice: jest.fn().mockResolvedValue({
+        baseAmount: '500.00',
+        markupPct: 0,
+        markupAmount: '0.00',
+        commissionPct: 0,
+        commissionFlat: '0.00',
+        commissionAmount: '0.00',
+        totalAmount: '500.00',
+        currency: 'USD',
+        appliedMarkupRuleId: null,
+        appliedCommissionRuleId: null
+      })
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         BookingsService,
-        { provide: PrismaService, useValue: prisma }
+        { provide: PrismaService, useValue: prisma },
+        { provide: DuffelProvider, useValue: duffel },
+        { provide: PricingService, useValue: pricing }
       ]
     }).compile();
 
@@ -76,7 +107,8 @@ describe('BookingsService', () => {
         offerId: 'offer-1',
         offerData: { segments: [] },
         currency: 'USD',
-        amount: '500.00'
+        amount: '500.00',
+        passengers: []
       });
 
       expect(result.id).toBe('booking-1');
@@ -97,7 +129,8 @@ describe('BookingsService', () => {
           offerId: 'offer-1',
           offerData: { test: true },
           currency: 'USD',
-          amount: '500.00'
+          amount: '500.00',
+          passengers: []
         })
       ).rejects.toThrow(BadRequestException);
     });
@@ -110,7 +143,8 @@ describe('BookingsService', () => {
           offerId: 'offer-1',
           offerData: { test: true },
           currency: 'USD',
-          amount: '500.00'
+          amount: '500.00',
+          passengers: []
         })
       ).rejects.toThrow(BadRequestException);
     });
@@ -121,7 +155,8 @@ describe('BookingsService', () => {
           offerId: 'offer-1',
           offerData: null,
           currency: 'USD',
-          amount: '500.00'
+          amount: '500.00',
+          passengers: []
         })
       ).rejects.toThrow(BadRequestException);
     });
@@ -285,20 +320,28 @@ describe('BookingsService', () => {
   describe('confirmForAgent', () => {
     it('should confirm a draft booking for agent in same agency', async () => {
       prisma.booking.findUnique.mockResolvedValue(mockBookingRow);
-      prisma.booking.update.mockResolvedValue({ ...mockBookingRow, status: 'confirmed' });
+      prisma.booking.update.mockResolvedValue({ ...mockBookingRow, status: 'confirmed', duffelOrderId: 'ord_123', duffelPnr: 'PNRABC', duffelTicketNumbers: ['176-1234567890'] });
 
       const result = await service.confirmForAgent(agentUser, 'booking-1');
 
       expect(result.status).toBe('confirmed');
+      expect(duffel.createOrder).toHaveBeenCalledWith(
+        expect.objectContaining({ offerId: 'offer-1', idempotencyKey: 'booking-booking-1' })
+      );
       expect(prisma.booking.update).toHaveBeenCalledWith({
         where: { id: 'booking-1' },
-        data: { status: 'confirmed' }
+        data: {
+          status: 'confirmed',
+          duffelOrderId: 'ord_123',
+          duffelPnr: 'PNRABC',
+          duffelTicketNumbers: ['176-1234567890']
+        }
       });
     });
 
     it('should confirm a draft booking for admin', async () => {
       prisma.booking.findUnique.mockResolvedValue(mockBookingRow);
-      prisma.booking.update.mockResolvedValue({ ...mockBookingRow, status: 'confirmed' });
+      prisma.booking.update.mockResolvedValue({ ...mockBookingRow, status: 'confirmed', duffelOrderId: 'ord_123', duffelPnr: 'PNRABC', duffelTicketNumbers: ['176-1234567890'] });
 
       const result = await service.confirmForAgent(adminUser, 'booking-1');
 
@@ -334,7 +377,14 @@ describe('BookingsService', () => {
       expect(result.status).toBe('cancelled');
       expect(prisma.booking.update).toHaveBeenCalledWith({
         where: { id: 'booking-1' },
-        data: { status: 'cancelled' }
+        data: {
+          status: 'cancelled',
+          metadata: expect.objectContaining({
+            cancellationPenalty: expect.any(String),
+            cancelledAt: expect.any(String),
+            cancelledBy: 'user-1'
+          })
+        }
       });
     });
 

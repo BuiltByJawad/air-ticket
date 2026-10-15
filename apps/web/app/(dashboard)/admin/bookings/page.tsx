@@ -28,7 +28,7 @@ export default async function AdminBookingsPage({
   const sp = await searchParams;
   const limit = Number(sp.limit) || DEFAULT_LIMIT;
   const offset = Number(sp.offset) || 0;
-  const status = typeof sp.status === 'string' ? (sp.status as 'draft' | 'confirmed' | 'cancelled') : undefined;
+  const status = typeof sp.status === 'string' ? (sp.status as 'draft' | 'payment' | 'confirmed' | 'cancelled') : undefined;
   const search = typeof sp.search === 'string' ? sp.search : undefined;
   const fromDate = typeof sp.fromDate === 'string' ? sp.fromDate : undefined;
   const toDate = typeof sp.toDate === 'string' ? sp.toDate : undefined;

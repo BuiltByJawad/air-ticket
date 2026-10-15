@@ -77,15 +77,31 @@ export interface FlightQuoteResponse {
   offer: FlightOffer;
 }
 
+export interface Passenger {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  dateOfBirth: string;
+  gender: 'M' | 'F' | 'O';
+  passportNumber: string;
+  passportExpiry: string;
+  passportIssuingCountry: string;
+}
+
 export interface Booking {
   id: string;
-  status: 'draft' | 'confirmed' | 'cancelled';
+  status: 'draft' | 'payment' | 'confirmed' | 'cancelled';
   offerId: string;
   offerData: Record<string, unknown>;
   totalPrice: {
     currency: string;
     amount: string;
   };
+  passengers?: Passenger[];
+  duffelOrderId?: string;
+  duffelPnr?: string;
+  duffelTicketNumbers?: string[];
   agencyId: string;
   agencyName?: string;
   createdByUserId: string;
@@ -171,6 +187,7 @@ type CacheStrategy =
 const SENSITIVE: CacheStrategy = { cache: 'no-store' };
 const REFERENCE: CacheStrategy = { cache: 'force-cache' };
 const FREQUENT: CacheStrategy = { next: { revalidate: 60 } };
+const SEARCH: CacheStrategy = { next: { revalidate: 300 } };
 
 async function apiFetch(path: string, init: RequestInit, strategy: CacheStrategy): Promise<Response> {
   const env = loadWebEnv();
@@ -250,7 +267,7 @@ export async function searchFlights(
       Authorization: `Bearer ${accessToken}`
     },
     body: JSON.stringify(input)
-  }, SENSITIVE);
+  }, SEARCH);
 
   if (!res.ok) {
     throw await toApiError(res, 'Failed to search flights');
@@ -279,7 +296,13 @@ export async function quoteFlight(accessToken: string, input: { offerId: string 
 
 export async function createBooking(
   accessToken: string,
-  input: { offerId: string; offerData: object; currency: string; amount: string }
+  input: { 
+    offerId: string; 
+    offerData: object; 
+    currency: string; 
+    amount: string;
+    passengers: Passenger[];
+  }
 ): Promise<Booking> {
   const res = await apiFetch('/bookings', {
     method: 'POST',
@@ -345,6 +368,50 @@ export async function cancelBooking(accessToken: string, id: string): Promise<Bo
   return normalizeBooking(data);
 }
 
+export async function refundBooking(accessToken: string, id: string): Promise<Booking> {
+  const res = await apiFetch(`/bookings/${encodeURIComponent(id)}/refund`, {
+    method: 'PATCH',
+    headers: {
+      Authorization: `Bearer ${accessToken}`
+    }
+  }, SENSITIVE);
+
+  if (!res.ok) {
+    throw await toApiError(res, 'Failed to refund booking');
+  }
+
+  const data = await parseApiResponse<unknown>(res);
+  return normalizeBooking(data);
+}
+
+export interface PaymentIntentResult {
+  clientSecret: string;
+  paymentIntentId: string;
+}
+
+export async function createPaymentIntent(
+  accessToken: string,
+  input: {
+    bookingId: string;
+    currency: string;
+    amount: string;
+  }
+): Promise<PaymentIntentResult> {
+  const res = await apiFetch('/payments/intent', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${accessToken}`
+    },
+    body: JSON.stringify(input)
+  }, SENSITIVE);
+
+  if (!res.ok) {
+    throw await toApiError(res, 'Failed to create payment intent');
+  }
+
+  return parseApiResponse<PaymentIntentResult>(res);
+}
+
 export async function listBookings(
   accessToken: string,
   input?: {
@@ -381,7 +448,7 @@ export async function listBookingsPaged(
   accessToken: string,
   input?: {
     agencyId?: string;
-    status?: 'draft' | 'confirmed' | 'cancelled';
+    status?: 'draft' | 'payment' | 'confirmed' | 'cancelled';
     search?: string;
     fromDate?: string;
     toDate?: string;
@@ -456,6 +523,7 @@ export interface AdminAgency {
   id: string;
   name: string;
   createdAt: string;
+  markupPercentage?: number;
 }
 
 export interface AdminUser {
@@ -541,6 +609,80 @@ export interface AuditLog {
   createdAt: string;
 }
 
+export interface AsyncJob {
+  id: string;
+  type: string;
+  dedupeKey?: string | null;
+  status: 'pending' | 'processing' | 'completed' | 'failed';
+  payload: Record<string, unknown>;
+  attempts: number;
+  maxAttempts: number;
+  runAfter: string;
+  lastError?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export async function listAdminJobs(
+  accessToken: string,
+  input?: {
+    status?: 'pending' | 'processing' | 'completed' | 'failed';
+    type?: string;
+    limit?: number;
+    offset?: number;
+  }
+): Promise<{ total: number; items: AsyncJob[] }> {
+  const params = new URLSearchParams();
+  if (input?.status) params.set('status', input.status);
+  if (input?.type) params.set('type', input.type);
+  if (input?.limit !== undefined) params.set('limit', String(input.limit));
+  if (input?.offset !== undefined) params.set('offset', String(input.offset));
+
+  const url = params.size > 0 ? `/admin/jobs?${params.toString()}` : '/admin/jobs';
+  const res = await apiFetch(url, {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${accessToken}` }
+  }, FREQUENT);
+  if (!res.ok) throw await toApiError(res, 'Failed to list admin jobs');
+  return parseApiResponse<{ total: number; items: AsyncJob[] }>(res);
+}
+
+export async function retryAdminJob(accessToken: string, id: string): Promise<AsyncJob> {
+  const res = await apiFetch(`/admin/jobs/${encodeURIComponent(id)}/retry`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${accessToken}` }
+  }, SENSITIVE);
+  if (!res.ok) throw await toApiError(res, 'Failed to retry job');
+  return parseApiResponse<AsyncJob>(res);
+}
+
+export async function triggerAdminJob(accessToken: string, id: string): Promise<AsyncJob> {
+  const res = await apiFetch(`/admin/jobs/${encodeURIComponent(id)}/trigger`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${accessToken}` }
+  }, SENSITIVE);
+  if (!res.ok) throw await toApiError(res, 'Failed to trigger job');
+  return parseApiResponse<AsyncJob>(res);
+}
+
+export async function cloneAdminJob(accessToken: string, id: string): Promise<AsyncJob> {
+  const res = await apiFetch(`/admin/jobs/${encodeURIComponent(id)}/clone`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${accessToken}` }
+  }, SENSITIVE);
+  if (!res.ok) throw await toApiError(res, 'Failed to clone job');
+  return parseApiResponse<AsyncJob>(res);
+}
+
+export async function getAdminJob(accessToken: string, id: string): Promise<AsyncJob> {
+  const res = await apiFetch(`/admin/jobs/${encodeURIComponent(id)}`, {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${accessToken}` }
+  }, FREQUENT);
+  if (!res.ok) throw await toApiError(res, 'Failed to get job');
+  return parseApiResponse<AsyncJob>(res);
+}
+
 export async function createAgency(accessToken: string, input: { name: string }): Promise<AdminAgency> {
   const res = await apiFetch('/admin/agencies', {
     method: 'POST',
@@ -566,7 +708,7 @@ export async function createAgent(accessToken: string, input: { agencyId: string
 export async function updateAgency(
   accessToken: string,
   id: string,
-  input: { name?: string }
+  input: { name?: string; markupPercentage?: number }
 ): Promise<AdminAgency> {
   const res = await apiFetch(`/admin/agencies/${id}`, {
     method: 'PATCH',
@@ -674,6 +816,26 @@ export interface AdminStats {
   topAgencies: { agencyId: string; agencyName: string; revenue: string; bookingCount: number }[];
   recentBookingsCount: number;
   monthlyRevenue: { month: string; revenue: string; bookingCount: number }[];
+  queue: {
+    pending: number;
+    processing: number;
+    failed: number;
+    oldestPendingAgeMinutes: number | null;
+  };
+}
+
+export interface ReconciliationSummary {
+  filters: { agencyId?: string; fromDate?: string; toDate?: string };
+  totals: {
+    bookings: number;
+    paymentState: { pending: number; succeeded: number; failed: number };
+    confirmed: number;
+    cancelled: number;
+    refundsPending: number;
+    refundsApproved: number;
+    refundsProcessed: number;
+  };
+  issues: { code: string; count: number }[];
 }
 
 export async function getAdminStats(accessToken: string): Promise<AdminStats> {
@@ -684,6 +846,24 @@ export async function getAdminStats(accessToken: string): Promise<AdminStats> {
   if (!res.ok) throw await toApiError(res, 'Failed to get admin stats');
   const data = await parseApiResponse<unknown>(res);
   return normalizeAdminStats(data);
+}
+
+export async function getReconciliationSummary(
+  accessToken: string,
+  input?: { agencyId?: string; fromDate?: string; toDate?: string }
+): Promise<ReconciliationSummary> {
+  const params = new URLSearchParams();
+  if (input?.agencyId) params.set('agencyId', input.agencyId);
+  if (input?.fromDate) params.set('fromDate', input.fromDate);
+  if (input?.toDate) params.set('toDate', input.toDate);
+
+  const url = params.size > 0 ? `/admin/reconciliation?${params.toString()}` : '/admin/reconciliation';
+  const res = await apiFetch(url, {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${accessToken}` }
+  }, FREQUENT);
+  if (!res.ok) throw await toApiError(res, 'Failed to get reconciliation summary');
+  return parseApiResponse<ReconciliationSummary>(res);
 }
 
 export interface AgentStats {
@@ -714,6 +894,7 @@ export interface AgencyDetail {
   bookingsCount: number;
   confirmedRevenue: string;
   revenueCurrency: string;
+  markupPercentage?: number;
 }
 
 export async function getAgencyDetail(accessToken: string, id: string, agentLimit?: number, agentOffset?: number): Promise<AgencyDetail> {

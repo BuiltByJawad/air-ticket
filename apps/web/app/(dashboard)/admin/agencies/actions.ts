@@ -6,7 +6,7 @@ import { createAgency, updateAgency, deleteAgency } from '@/lib/api/api-client';
 import { createAgencySchema, updateAgencySchema } from '@/lib/validators/schemas';
 import { revalidatePath } from 'next/cache';
 
-export async function createAgencyAction(data: { name: string }, csrfToken: string) {
+export async function createAgencyAction(data: { name: string; markupPercentage?: number }, csrfToken: string) {
   const csrfOk = await validateCsrfToken(csrfToken);
   if (!csrfOk) throw new Error('Invalid CSRF token');
   const token = await getSessionToken();
@@ -20,7 +20,7 @@ export async function createAgencyAction(data: { name: string }, csrfToken: stri
   revalidatePath('/admin');
 }
 
-export async function updateAgencyAction(id: string, data: { name?: string }, csrfToken: string) {
+export async function updateAgencyAction(id: string, data: { name?: string; markupPercentage?: number }, csrfToken: string) {
   const csrfOk = await validateCsrfToken(csrfToken);
   if (!csrfOk) throw new Error('Invalid CSRF token');
   const token = await getSessionToken();
@@ -31,6 +31,7 @@ export async function updateAgencyAction(id: string, data: { name?: string }, cs
 
   await updateAgency(token, id, parsed.data);
   revalidatePath('/admin/agencies');
+  revalidatePath(`/admin/agencies/${id}`);
 }
 
 export async function deleteAgencyAction(id: string, csrfToken: string) {

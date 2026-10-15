@@ -1,35 +1,36 @@
-export interface WebEnv {
-  API_BASE_URL: string;
-  SESSION_COOKIE_NAME: string;
-  NODE_ENV: 'development' | 'test' | 'production';
-}
+import { z } from 'zod';
 
-function isValidUrl(value: string): boolean {
-  try {
-    new URL(value);
-    return true;
-  } catch {
-    return false;
-  }
-}
+const envSchema = z.object({
+  API_BASE_URL: z.string().url(),
+  SESSION_COOKIE_NAME: z.string().min(1).default('air_ticket_session'),
+  NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
+});
+
+export type WebEnv = z.infer<typeof envSchema>;
+
+let env: WebEnv;
 
 export function loadWebEnv(): WebEnv {
-  const apiBaseUrl = process.env.API_BASE_URL;
-  if (!apiBaseUrl || !isValidUrl(apiBaseUrl)) {
-    throw new Error('Missing or invalid API_BASE_URL');
+  if (env) return env;
+
+  const result = envSchema.safeParse({
+    API_BASE_URL: process.env.API_BASE_URL,
+    NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
+    SESSION_COOKIE_NAME: process.env.SESSION_COOKIE_NAME,
+    NODE_ENV: process.env.NODE_ENV,
+  });
+
+  if (!result.success) {
+    const errors = result.error.flatten().fieldErrors;
+    const errorMsg = Object.entries(errors)
+      .map(([key, val]) => `${key}: ${val?.join(', ')}`)
+      .join('; ');
+    
+    throw new Error(`Environment validation failed: ${errorMsg}`);
   }
 
-  const cookieName = process.env.SESSION_COOKIE_NAME;
-
-  const nodeEnvRaw = process.env.NODE_ENV;
-  const nodeEnv: WebEnv['NODE_ENV'] =
-    nodeEnvRaw === 'production' || nodeEnvRaw === 'test' || nodeEnvRaw === 'development' ? nodeEnvRaw : 'development';
-
-  return {
-    API_BASE_URL: apiBaseUrl,
-    SESSION_COOKIE_NAME: cookieName && cookieName.length > 0 ? cookieName : 'air_ticket_session',
-    NODE_ENV: nodeEnv
-  };
+  env = result.data;
+  return env;
 }
 
 // Fail fast at startup if critical env variables are missing
@@ -37,6 +38,9 @@ if (process.env.NODE_ENV !== 'test') {
   try {
     loadWebEnv();
   } catch (err) {
-    console.error('Environment validation failed:', err instanceof Error ? err.message : err);
+    console.error(err instanceof Error ? err.message : 'Unknown environment validation error');
+    if (process.env.NODE_ENV === 'production') {
+      process.exit(1);
+    }
   }
 }
